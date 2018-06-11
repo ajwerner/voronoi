@@ -65,7 +65,7 @@
 
 
 (defn current-pos-display [scan]
-  [:div [:h3 (str scan)] [:br]])
+  [:div [:h3 (.toFixed scan 2)] [:br]])
 
 (defn button [text action]
   [:button {:href "#" :onClick action} text])
@@ -102,25 +102,43 @@
   #(let [v (getter)] (if (pred v) (action v))))
 
 (defn get-form-numbers [ids]
-  (for [id ids]
-    {(keyword id) (get-form-num id)}))
+  (let [ids (for [id ids]
+              (let [n (get-form-num id)]
+                {(keyword id) (get-form-num id)}))
+        ]
+    (apply merge ids)))
+
+(defn control-add-point [control-funcs]
+  (let [point-prop-keys ["point-x" "point-y"]
+        point-prop-ids (map keyword point-prop-keys)
+        get-point #(get-form-numbers point-prop-keys)
+        point-vals (fn [p] (map #(get p %) point-prop-ids))
+        point-point (fn [{x :point-x y :point-y}] {:x x :y y})
+        point-ok? #(not-any? isNaN? (point-vals %))
+        do-reset-point #((:reset-state control-funcs) [(point-point %)])
+        reset-point (do-ok get-point point-ok? do-reset-point)
+        do-add-point #((:add-points control-funcs) [(point-point %)])
+        add-point (do-ok get-point point-ok? do-add-point)]
+    [:div
+     [:form {:id "point" :onSubmit on-submit-action}
+      [:div {:id "point-fields"}
+       (make-text-input "point-x" "X" default-form-keypress)
+       (make-text-input "point-y" "Y" default-form-keypress)
+       [:button {:href "#" :onClick reset-point} "reset"]
+       [:button {:href "#" :onClick add-point} "add"]]]]))
+
 
 (defn control-add-circle [control-funcs]
-  (let [circle-prop-ids ["circle-n" "circle-rad" "circle-x" "circle-y"]
-        circle-prop-keys (map keyword circle-prop-ids)
-        get-circle #(get-form-numbers circle-prop-keys
-                                      )
-        circle-vals (fn [c] (select-keys circle-prop-keys c))
-        circle-ok? #(not-any? true? (map js/isNan (circle-vals %)))
-        do-if-ok (fn [action]
-                   (let [c (get-circle)]
-                     (if (circle-ok? c)
-                       (action c))))
+  (let [circle-prop-keys ["circle-n" "circle-rad" "circle-x" "circle-y"]
+        circle-prop-ids (map keyword circle-prop-keys)
+        get-circle #(get-form-numbers circle-prop-keys)
+        circle-vals (fn [c] (map #(get c %) circle-prop-ids))
+        circle-ok? #(not-any? isNaN? (circle-vals %))
         circle-points #(apply points/circle-points (circle-vals %))
-        reset-circle (do-ok get-circle circle-ok?
-                      #((:reset-state control-funcs) (circle-points %)))
-        add-circle (do-ok get-circle circle-ok?
-                    #((:add-points control-funcs) (circle-points %)))]
+        do-reset-circle #((:reset-state control-funcs) (circle-points %))
+        reset-circle (do-ok get-circle circle-ok? do-reset-circle)
+        do-add-circle #((:add-points control-funcs) (circle-points %))
+        add-circle (do-ok get-circle circle-ok? do-add-circle)]
     [:div
      [:form {:id "circle" :onSubmit on-submit-action}
       [:div {:id "circle-fields"}
@@ -135,7 +153,7 @@
 
 (defn control-add-random [control-funcs]
   (let [get-random-n #(get-form-num "random-n")
-        is-number? #(not (js/isNaN %))
+        is-number? #(not (isNaN? %))
         reset-random (do-ok get-random-n is-number?
                              #((:reset-state control-funcs) (points/random-points %)))
         add-random (do-ok get-random-n is-number?
@@ -146,24 +164,6 @@
       [:button {:href "#" :onClick reset-random} "reset"]
       [:button {:href "#" :onClick add-random} "add"]]]))
 
-(defn control-add-point [control-funcs]
-  (let [point-prop-ids ["point-x" "point-y"]
-        point-prop-keys (map keyword point-prop-ids)
-        get-point #(get-form-numbers point-prop-keys)
-        point-vals (fn [p] (select-keys point-prop-keys p))
-        point-point (fn [p] {:x (:point-x p) :y (:point-y p)})
-        point-ok? #(not-any? true? (map js/isNaN (point-vals %)))
-        reset-point #(do-ok get-point point-ok?
-                           ((:reset-state control-funcs) [(point-point %)]))
-        add-point #(do-ok get-point point-ok?
-                           ((:add-points control-funcs) [(point-point %)]))]
-    [:div
-     [:form {:id "point" :onSubmit on-submit-action}
-      [:div {:id "point-fields"}
-       (make-text-input "point-x" "X" default-form-keypress)
-       (make-text-input "point-y" "Y" default-form-keypress)
-       [:button {:href "#" :onClick reset-point} "reset"]
-       [:button {:href "#" :onClick add-point} "add"]]]]))
 
 (defn control-add-panel [control-funcs]
   (let [add-mode (atom :random)
@@ -188,10 +188,10 @@
    :clear #(reset-state! data [])
    :step #(do-step! data)
    :set-to  #(let [to (get-form-num "y-val")]
-               (if-not (js/isNaN to)
+               (if-not (isNaN? to)
                  (do-set-to! data to)))
    :set-by #(let [by (get-form-num "by-val")]
-              (if-not (js/isNaN by)
+              (if-not (isNaN? by)
                 (do-set-by! data by)))
    :add-points #(add-points! data %)})
 
@@ -220,8 +220,6 @@
              (* 2 (- b c)))]
     y))
 
-;; (+ (sq (- (:x foc) x)) ) = (sq (- dir y)) (sq (- (:y foc) y))
-
 (defn infy? [n]
   (or (== n Infinity)
       (== n -Infinity)))
@@ -235,7 +233,7 @@
                     (/ (:x foc) denom))
                  (/ (- xmax xmin) 2)))
         y2 (parabola-point-y foc y xmax)]
-    (if-not (= Infinity y1)
+    (if (not-any? #(or (infy? %) (isNaN? %)) [y1 cx cy y2])
       [:path {:d (str
                   "M " xmin " " y1
                   " Q " cx " " cy " " xmax " " y2)
@@ -271,9 +269,12 @@
 (defn draw-edges [edges]
   (fn []
     [:g
-     (for [{begin :begin end :end :as edge} @edges]
+     (for [{{bx :x by :y} :begin
+            {ex :x ey :y} :end
+            :as edge} @edges
+           :when (not-any? infy? [bx by ex ey])]
        ^{:key edge}
-       [line (:x begin) (:y begin) (:x end) (:y end) {:stroke "blue"}])]))
+       [line bx by ex ey {:stroke "blue"}])]))
 
 (defn draw-break [bp y]
   (let [{bx :x by :y} (:begin bp)
@@ -298,18 +299,13 @@
         completed-cursor (reagent/cursor voronoi [:completed])]
     (fn []
       (let [
-            [xmin xmax] [0 700]
-            [ymin ymax] [0 700]
+            [xmin xmax] [-50 1000]
+            [ymin ymax] [-50 800]
             xwidth (- xmax xmin)
             ywidth (- ymax ymin)
             view-box (string/join " " [xmin ymin xwidth ywidth])]
         [:svg {:viewBox view-box
-               :preserveAspectRatio "xMidYMid meet"
-               :style
-               {:max-width "100vw"
-                :min-width "200px"
-                :max-height "800px"
-                :min-height "400px"}}
+               :preserveAspectRatio "xMidYMid meet"}
          [draw-points points-cursor]
          [draw-edges completed-cursor]
          [draw-sweep-state voronoi (- xmin xwidth) (+ xmax xwidth)]]))))
@@ -323,8 +319,11 @@
         show-table (reagent/cursor data [:display-state :show-table])
         arcs (reagent/cursor data [:voronoi :arcs])]
     (fn []
-      [:div
-       [:div [draw-it vor]]
-       [control-panel paused scan control]
-       [control-add-panel control]
+      [:section.voronoi-widget
+       [:div.graphics
+        [draw-it vor]]
+       [:div.control-panel
+        [control-panel paused scan control]
+        [:div.add-bar [:h4 "Add Points"]
+         [control-add-panel control]]]
        [table-controler show-table arcs scan]])))

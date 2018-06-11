@@ -1,36 +1,54 @@
 (ns vor2.core
   (:require [reagent.core :as reagent :refer [atom]]
-              [secretary.core :as secretary :include-macros true]
-              [accountant.core :as accountant]
-              [quil.core :as q :include-macros true]
-              [quil.middleware]
-              [voronoi.voronoi :as vor]
-              [voronoi.draw :refer [draw draw-f canvas-size]]
-              [voronoi.components :refer [app-thing]]
-              [voronoi.control :refer [mouse-pressed!
-                                       reset-state!]]
-              [voronoi.points :as p]))
+            [secretary.core :as secretary :include-macros true]
+            [accountant.core :as accountant]
+            [voronoi.voronoi :as vor]
+            [voronoi.draw :refer [draw draw-f canvas-size]]
+            [voronoi.components :refer [app-thing]]
+            [voronoi.control :refer [
+                                     reset-state!]]
+            [voronoi.points :as p]))
+
+;; -------------------------
+;; State
+
+(defonce app-state (atom {}))
+(def initial-points p/some-cool-stuff)
+(reset-state! app-state initial-points)
 
 ;; -------------------------
 ;; Views
 
-(defonce app-state (atom {}))
-(def initial-points (p/random-points 100))
-;;(reset-state! app-state initial-points)
-
-(defn setup []
-  (q/frame-rate 60)
-  (q/background 250)
-  app-state)
 
 (defn home-page []
-  [:div [:h2 "Welcome to vor2"]
-   [app-thing app-state]
-   [:div [:a {:href "/about"} "go to about page"]]])
+  [:div [:h2 "Voronoi Diagrams"]
+   [:div
+    [:div
+     [:h3 "What is this?"]
+     [:p
+      "This post is primarily about Voronoi diagram"
+      " but along the way it's also about:"
+      [:ul (map #(into ^{:key %} [:li] %) ["Clojure/Clojurescript"
+                                 "React/Reagent and Single Page applications"
+                                 "Drawing in the browser (Processing/Quil and SVGs)"
+                                 "Robust geometric predicates with floating point"])]
+
+]
+     [:h3 "What is this not?"]
+     [:p "Novel, this project has no novel contributions to offer to the world."
+      " Any seemingly deep insight was much more deeply pursued by somebody else."
+      " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]
+     ]
+
+    ]
+   [:div [:a {:href "/voronoi/interactive"} "voronoi diagrams ->"]]])
 
 (defn about-page []
-  [:div [:h2 "About vor2"]
-   [:div [:a {:href "/"} "go to the home page"]]])
+  [:div [:h2 "Voronoi diagrams"]
+   [:div
+    [:p "Just a pretty picture for now"] ]
+   [app-thing app-state]
+   [:div [:a {:href "/voronoi/"} "<- back"]]])
 
 ;; -------------------------
 ;; Routes
@@ -40,10 +58,10 @@
 (defn current-page []
   [:div [@page]])
 
-(secretary/defroute "/" []
+(secretary/defroute "/voronoi/" []
   (reset! page #'home-page))
 
-(secretary/defroute "/about" []
+(secretary/defroute "/voronoi/interactive" []
   (reset! page #'about-page))
 
 ;; -------------------------

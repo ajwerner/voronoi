@@ -471,14 +471,15 @@
         handler (if (= (:type ev) :circle)
                   handle-circle-event
                   handle-site-event)]
-    (-> vor
-        (update :events #(disj % ev))
-        (handler ev))))
+    (if-not ev vor
+            (-> vor
+                (update :events #(disj % ev))
+                (handler ev)))))
 
 (defn scan-to [vor to]
   (loop [{events :events :as cur} vor]
     (let [ev (first events)
-          have-event (and (some? next)
+          have-event (and (some? ev)
                           (>= to (:y ev)))]
       (if-not have-event
           (assoc cur :scan to)

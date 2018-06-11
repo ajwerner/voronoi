@@ -105,20 +105,12 @@
 
 (def some-cool-stuff (concat
  (circle-points 200 200 550 300)
- (circle-points 400 100 550 300)
- (circle-points 200 150 200 300)
  (circle-points 280 250 200 300)
  (circle-points 50 50 200 300)
  (circle-points 100 300 725 300)
  (circle-points 200 100 300 400)
- (circle-points 200 100 400 300)
  (circle-points 200 200  300 550)
- (circle-points 400 100  300 550)
- (circle-points 200 150 300 200)
- (circle-points 280 250 300 200)))
-
-;; (circle-points 50 50 300 200)
-;; (circle-points 100 300 300 725)
+ (circle-points 400 100  300 550)))
 
 (def bad-shit
   (points-lists-to-points
