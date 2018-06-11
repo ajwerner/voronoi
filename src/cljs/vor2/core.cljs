@@ -62,3 +62,5 @@
        (secretary/locate-route path))})
   (accountant/dispatch-current!)
   (mount-root))
+
+(defn ^:export main [] (init!))

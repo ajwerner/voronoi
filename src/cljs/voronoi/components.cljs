@@ -220,22 +220,25 @@
              (* 2 (- b c)))]
     y))
 
+;; (+ (sq (- (:x foc) x)) ) = (sq (- dir y)) (sq (- (:y foc) y))
+
 (defn infy? [n]
   (or (== n Infinity)
       (== n -Infinity)))
 
-(defn draw-parabola [foc y xmin xmax step]
-  (let [xvals (-> [xmin]
-            (into (range xmin xmax step))
-            (conj xmax))
-        points (for [x xvals] [x (parabola-point-y foc y x)])
-        points (flatten points)
-        are-inf (some infy? points)]
-    (if (some isNaN? points)
-      nil
+(defn draw-parabola [foc y xmin xmax]
+  (let [y1 (parabola-point-y foc y xmin)
+        cx (/ (+ xmin xmax) 2)
+        denom (- (:y foc) y)
+        cy (+ y1
+              (* (- (/ xmin denom)
+                    (/ (:x foc) denom))
+                 (/ (- xmax xmin) 2)))
+        y2 (parabola-point-y foc y xmax)]
+    (if-not (= Infinity y1)
       [:path {:d (str
-                  "M " (first points) " " (second points)
-                  " L " (string/join " " (drop 2 points)))
+                  "M " xmin " " y1
+                  " Q " cx " " cy " " xmax " " y2)
               :fill-opacity "0"
               :stroke "black"}])))
 
@@ -249,13 +252,14 @@
                             xmax (max (min (:x arcR) xmax) xmin)
                             foc (:point arc)]
                         (if-not (= xmin xmax)
-                          (draw-parabola (:point arc) y xmin xmax .1))))]
+                          (draw-parabola (:point arc) y xmin xmax))))]
       (into [:g] (remove nil? parabolas)))))
 
-(defn draw-points [points]
-  [:g
-   (for [{x :x y :y :as p} points]
-     ^{:key p} [:circle {:cx x :cy y :r 1 :stroke "black"}])])
+(defn draw-points [points-cursor]
+  (fn []
+    [:g
+     (for [{x :x y :y :as p} @points-cursor]
+       ^{:key p} [:circle {:cx x :cy y :r 1 :stroke "black"}])]))
 
 
 (defn line [x1 y1 x2 y2 attrs]
@@ -265,10 +269,11 @@
   [:g (line xmin y xmax y {:stroke "black"})])
 
 (defn draw-edges [edges]
-  [:g
-   (for [{begin :begin end :end :as edge} edges]
-     ^{:key edge}
-     (line (:x begin) (:y begin) (:x end) (:y end) {:stroke "blue"}))])
+  (fn []
+    [:g
+     (for [{begin :begin end :end :as edge} @edges]
+       ^{:key edge}
+       [line (:x begin) (:y begin) (:x end) (:y end) {:stroke "blue"}])]))
 
 (defn draw-break [bp y]
   (let [{bx :x by :y} (:begin bp)
@@ -278,29 +283,36 @@
 (defn draw-breaks [breaks y]
   [:g (for [bp breaks] ^{:key bp} [draw-break bp y])])
 
-(defn draw-it [voronoi]
+(defn draw-sweep-state [voronoi xmin xmax]
   (fn []
     (let [{y :scan
-           points :points
            arcs :arcs
-           edges :edges
-           completed :completed
-           breaks :breaks} @voronoi
-          [xmin xmax] [0 700]
-          [ymin ymax] [0 700]
-          view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])]
-      [:svg {:viewBox view-box
-             :preserveAspectRatio "xMidYMid meet"
-             :style
-             {:max-width "100vw"
-              :min-width "200px"
-              :max-height "800px"
-              :min-height "400px"}}
-       [draw-points points]
+           breaks :breaks} @voronoi]
+      [:g
        [draw-sweep-line y xmin xmax]
        [draw-parabolas arcs y xmin xmax]
-       [draw-edges completed]
        [draw-breaks breaks y]])))
+
+(defn draw-it [voronoi]
+  (let [points-cursor (reagent/cursor voronoi [:points])
+        completed-cursor (reagent/cursor voronoi [:completed])]
+    (fn []
+      (let [
+            [xmin xmax] [0 700]
+            [ymin ymax] [0 700]
+            xwidth (- xmax xmin)
+            ywidth (- ymax ymin)
+            view-box (string/join " " [xmin ymin xwidth ywidth])]
+        [:svg {:viewBox view-box
+               :preserveAspectRatio "xMidYMid meet"
+               :style
+               {:max-width "100vw"
+                :min-width "200px"
+                :max-height "800px"
+                :min-height "400px"}}
+         [draw-points points-cursor]
+         [draw-edges completed-cursor]
+         [draw-sweep-state voronoi (- xmin xwidth) (+ xmax xwidth)]]))))
 
 
 (defn app-thing [data]

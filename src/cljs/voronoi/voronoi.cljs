@@ -370,23 +370,19 @@
         newArcLeft (new-arc (:left arcLeft) bp y)]
     (-> vor
         (assoc :scan y)
-        (update :events #(disj % evLeft))
-        (update :events #(disj % evRight))
+        (update :events #(disj % evLeft evRight))
         (update :edges #(conj % newEdge))
-        (update :arcs #(dissoc % arc))
-        (update :arcs #(dissoc % arcRight))
-        (update :arcs #(dissoc % arcLeft))
-        (update :arcs #(assoc % newArcRight nil))
-        (update :arcs #(assoc % newArcLeft nil))
-        (update :breaks #(disj % (:left arc)))
-        (update :breaks #(disj % (:right arc)))
+        (update :arcs #(dissoc % arc arcRight arcLeft))
+        (update :arcs #(assoc % newArcRight nil newArcLeft nil))
+        (update :breaks #(disj % (:left arc) (:right arc)))
         (update :breaks #(conj % bp))
-        (update :completed #(conj % {:end (:vert ev)
+        (update :completed #(conj %
+                                  {:end (:vert ev)
                                      :begin (:begin (:left arc))
-                                     :edge (:edge (:left arc))}))
-        (update :completed #(conj % {:end (:vert ev)
-                                     :begin (:begin (:right arc))
-                                     :edge (:edge (:right arc))}))
+                                     :edge (:edge (:left arc))}
+                                  {:end (:vert ev)
+                                   :begin (:begin (:right arc))
+                                   :edge (:edge (:right arc))}))
         (check-for-circle-event newArcLeft)
         (check-for-circle-event newArcRight))))
 

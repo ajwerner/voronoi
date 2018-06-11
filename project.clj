@@ -62,11 +62,7 @@
               :output-dir "target/cljsbuild/public/js/out"
               :source-map true
               :optimizations :none
-              :pretty-print  true}}
-
-
-
-            }
+              :pretty-print  true}}}
    }
 
   :figwheel
@@ -77,7 +73,6 @@
                       ]
    :css-dirs ["resources/public/css"]
    :ring-handler vor2.handler/app}
-
 
 
   :profiles {:dev {:repl-options {:init-ns vor2.repl
