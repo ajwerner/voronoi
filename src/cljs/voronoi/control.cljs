@@ -1,20 +1,8 @@
 (ns voronoi.control
-  (:require [voronoi.voronoi :as vor]
-            [voronoi.draw :refer [draw canvas-size]]))
-
-
-
-
-;; (defn toggle-pause-scan! [state-atom]
-;;   (swap! state-atom toggle-pause-scan)
-;;   state-atom)
-
+  (:require [voronoi.voronoi :as vor]))
 
 (defn do-step! [state-atom]
-  (swap! state-atom #(update % :voronoi vor/handle-event))
-  ;; (draw @state-atom)
-  )
-
+  (swap! state-atom #(update % :voronoi vor/handle-event)))
 
 (defn pause-scan [scan-state]
   (-> scan-state

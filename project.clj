@@ -1,11 +1,10 @@
-(defproject vor2 "0.1.0"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+(defproject voronoi "0.1.0"
+  :description "A Voronoi Diagram Reagent Project"
+  :url "http://ajwerner.github.io/voronoi"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [funcool/cuerdas "2.0.5"]
                  [ring-server "0.5.0"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.1"]
@@ -17,7 +16,6 @@
                  [org.clojure/clojurescript "1.10.238"
                   :scope "provided"]
                  [secretary "1.2.3"]
-                 [quil "2.6.0"]
                  [venantius/accountant "0.2.4"
                   :exclusions [org.clojure/tools.reader]]]
 
@@ -26,12 +24,12 @@
             [lein-asset-minifier "0.2.7"
              :exclusions [org.clojure/clojure]]]
 
-  :ring {:handler vor2.handler/app
-         :uberwar-name "vor2.war"}
+  :ring {:handler voronoi.handler/app
+         :uberwar-name "voronoi.war"}
 
   :min-lein-version "2.5.0"
-  :uberjar-name "vor2.jar"
-  :main vor2.server
+  :uberjar-name "voronoi.jar"
+  :main voronoi.server
   :clean-targets ^{:protect false}
   [:target-path
    [:cljsbuild :builds :app :compiler :output-dir]
@@ -48,17 +46,26 @@
   {:builds {:min
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
              :compiler
-             {:main             "vor2.core"
+             {:main             "voronoi.core"
               :output-to        "target/cljsbuild/public/js/app.js"
               :output-dir       "target/cljsbuild/public/js"
               :source-map       "target/cljsbuild/public/js/app.js.map"
               :optimizations :advanced
               :pretty-print  false}}
+            :gh-page
+            {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
+             :compiler
+             {:main             "voronoi.core"
+              :output-to        "docs/js/app.js"
+              :output-dir       "docs/js"
+              :source-map       "docs/js/app.js.map"
+              :optimizations :advanced
+              :pretty-print  false}}
             :app
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
-             :figwheel {:on-jsload "vor2.core/mount-root"}
+             :figwheel {:on-jsload "voronoi.core/mount-root"}
              :compiler
-             {:main "vor2.dev"
+             {:main "voronoi.dev"
               :asset-path "/js/out"
               :output-to "target/cljsbuild/public/js/app.js"
               :output-dir "target/cljsbuild/public/js/out"
@@ -74,10 +81,10 @@
    :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"
                       ]
    :css-dirs ["resources/public/css"]
-   :ring-handler vor2.handler/app}
+   :ring-handler voronoi.handler/app}
 
 
-  :profiles {:dev {:repl-options {:init-ns vor2.repl
+  :profiles {:dev {:repl-options {:init-ns voronoi.repl
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
                    :dependencies [[binaryage/devtools "0.9.10"]
@@ -87,9 +94,7 @@
                                   [figwheel-sidecar "0.5.16"]
                                   [org.clojure/tools.nrepl "0.2.13"]
                                   [com.cemerick/piggieback "0.2.2"]
-                                  [pjstadig/humane-test-output "0.8.3"]
-
- ]
+                                  [pjstadig/humane-test-output "0.8.3"] ]
 
                    :source-paths ["env/dev/clj"]
                    :plugins [[lein-figwheel "0.5.16"]]

@@ -1,5 +1,5 @@
-(ns vor2.repl
-  (:use vor2.handler
+(ns voronoi.repl
+  (:use voronoi.handler
         figwheel-sidecar.repl-api
         ring.server.standalone
         [ring.middleware file-info file]))

@@ -1,6 +1,9 @@
 /target
 /classes
 /checkouts
+/docs/js
+!/docs/js/app.js
+!/docs/js/app.js.map
 profiles.clj
 pom.xml
 pom.xml.asc

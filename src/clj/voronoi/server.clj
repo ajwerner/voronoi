@@ -1,5 +1,5 @@
-(ns vor2.server
-    (:require [vor2.handler :refer [app]]
+(ns voronoi.server
+    (:require [voronoi.handler :refer [app]]
               [config.core :refer [env]]
               [ring.adapter.jetty :refer [run-jetty]])
     (:gen-class))

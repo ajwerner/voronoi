@@ -1,6 +1,6 @@
-# vor2
+# voronoi
 
-This is the vor2 project.
+This is the voronoi project.
 
 ## Development mode
 

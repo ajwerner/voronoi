@@ -1,5 +1,6 @@
-(ns voronoi.points
-  (:require [voronoi.draw :refer [canvas-size]]))
+(ns voronoi.points)
+
+(def canvas-size [700 700])
 
 (defn point-list-to-point [[x y]] {:x x :y y})
 

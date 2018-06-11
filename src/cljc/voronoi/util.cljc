@@ -1,4 +1,4 @@
-(ns vor2.util)
+(ns voronoi.util)
 
 (defn foo-cljc [x]
   "I don't do a whole lot."
