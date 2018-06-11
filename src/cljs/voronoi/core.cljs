@@ -1,4 +1,4 @@
-5A(ns voronoi.core
+(ns voronoi.core
   (:require [reagent.core :as reagent :refer [atom]]
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
@@ -25,26 +25,22 @@
      [:h3 "What is this?"]
      [:p
       "This post is primarily about Voronoi diagram"
-      " but along the way it's also about:"
-      [:ul (map #(into ^{:key %} [:li] %) ["Clojure/Clojurescript"
-                                 "React/Reagent and Single Page applications"
-                                 "Drawing in the browser (Processing/Quil and SVGs)"
-                                 "Robust geometric predicates with floating point"])]
-
-]
+      " but along the way it's also about:"]
+     [:ul (map #(into ^{:key %} [:li] %)
+               ["Clojure/Clojurescript"
+                "React/Reagent and Single Page applications"
+                "Drawing in the browser (Processing/Quil and SVGs)"
+                "Robust geometric predicates with floating point"])]
      [:h3 "What is this not?"]
      [:p "Novel, this project has no novel contributions to offer to the world."
       " Any seemingly deep insight was much more deeply pursued by somebody else."
-      " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]
-     ]
-
-    ]
+      " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]
    [:div [:a {:href "/voronoi/interactive"} "voronoi diagrams ->"]]])
 
 (defn about-page []
   [:div [:h2 "Voronoi diagrams"]
    [:div
-    [:p "Just a pretty picture for now"] ]
+    [:p "Just a pretty picture for now"]]
    [app-thing app-state]
    [:div [:a {:href "/voronoi/"} "<- back"]]])
 
