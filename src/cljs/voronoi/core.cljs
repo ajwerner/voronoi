@@ -3,60 +3,39 @@
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
             [voronoi.voronoi :as vor]
-            [voronoi.components :refer [app-thing]]
+            [voronoi.components :refer [intro animation-playground]]
             [voronoi.control :refer [reset-state!]]
             [voronoi.points :as p]))
 
 ;; -------------------------
 ;; State
 
-(defonce app-state (atom {}))
+(defonce app-state (atom {:animation-page nil}))
+(defonce animation-playground-page
+  #(animation-playground
+    (reagent/cursor app-state [:animation-page])))
 (def initial-points p/some-cool-stuff)
 (reset-state! app-state initial-points)
 
 ;; -------------------------
 ;; Views
 
-
-(defn home-page []
-  [:div [:h2 "Voronoi Diagrams"]
-   [:div
-    [:div
-     [:h3 "What is this?"]
-     [:p
-      "This post is primarily about Voronoi diagram"
-      " but along the way it's also about:"]
-     [:ul (map #(into ^{:key %} [:li] %)
-               ["Clojure/Clojurescript"
-                "React/Reagent and Single Page applications"
-                "Drawing in the browser (Processing/Quil and SVGs)"
-                "Robust geometric predicates with floating point"])]
-     [:h3 "What is this not?"]
-     [:p "Novel, this project has no novel contributions to offer to the world."
-      " Any seemingly deep insight was much more deeply pursued by somebody else."
-      " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]
-   [:div [:a {:href "/voronoi/interactive"} "voronoi diagrams ->"]]])
-
-(defn about-page []
-  [:div [:h2 "Voronoi diagrams"]
-   [:div
-    [:p "Just a pretty picture for now"]]
-   [app-thing app-state]
-   [:div [:a {:href "/voronoi/"} "<- back"]]])
-
 ;; -------------------------
 ;; Routes
 
-(defonce page (atom #'home-page))
+(defonce page (atom #'intro))
 
 (defn current-page []
   [:div [@page]])
 
-(secretary/defroute "/voronoi/" []
-  (reset! page #'home-page))
+(secretary/defroute "/" []
+  (reset! page #'intro))
 
-(secretary/defroute "/voronoi/interactive" []
-  (reset! page #'about-page))
+(secretary/defroute "/#intro" []
+  (reset! page #'intro))
+
+(secretary/defroute "/#animation-playground" []
+  (reset! page #'animation-playground-page))
 
 ;; -------------------------
 ;; Initialize app

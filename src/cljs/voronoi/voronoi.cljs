@@ -323,7 +323,7 @@
      :scan scan
      :events events
      :edges []
-     :completed #{}
+     :completed []
      :breaks #{}
      :arcs (sorted-map-by arc-comparator)}))
 
