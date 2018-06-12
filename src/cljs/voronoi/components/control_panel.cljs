@@ -222,4 +222,4 @@
   (let []
     [:div.control-panel
      [scan-control-panel data]
-     [point-control-panel (control-funcs data)]]))
+     [point-control-panel data]]))
