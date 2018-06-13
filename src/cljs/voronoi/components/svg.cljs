@@ -2,7 +2,7 @@
   (:require [voronoi.util :refer [Infinity -Infinity isNaN?]]
             [voronoi.voronoi :as vor]
             [clojure.string :as string]
-            [reagent.core :as r :refer [atom]]))
+            [reagent.core :as reagent]))
 
 (defn parabola-point-y [foc dir x]
   (let [a (:x foc)
@@ -68,13 +68,13 @@
 
 
 (defn get-completed [completeds idx]
-  (-> @(r/track get-completeds completeds) (nth idx)))
+  (-> @(reagent/track get-completeds completeds) (nth idx)))
 
 (defn get-completed-count [completeds]
-  (-> @(r/track get-completeds completeds) count))
+  (-> @(reagent/track get-completeds completeds) count))
 
 (defn completed-comp [completeds i]
-  (let [t (r/track get-completed completeds i)]
+  (let [t (reagent/track get-completed completeds i)]
     (fn []
       (let [{{bx :x by :y} :begin
              {ex :x ey :y} :end
@@ -84,7 +84,7 @@
           [line bx by ex ey {:stroke "blue"}])))))
 
 (defn draw-completeds [completeds]
-  (let [c @(r/track get-completed-count completeds)]
+  (let [c @(reagent/track get-completed-count completeds)]
     [:g (for [i (range c)]
           ^{:key i} [completed-comp completeds i])]))
 
@@ -110,8 +110,8 @@
   "draws an svg
   expects a ratom for a voronoi diagram"
   [voronoi]
-  (let [points-cursor (r/cursor voronoi [:points])
-        completed-cursor (r/cursor voronoi [:completed])
+  (let [points-cursor (reagent/cursor voronoi [:points])
+        completed-cursor (reagent/cursor voronoi [:completed])
         [xmin xmax] [-50 1000]
         [ymin ymax] [-50 800]
         xwidth (- xmax xmin)
