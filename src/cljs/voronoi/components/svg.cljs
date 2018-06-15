@@ -4,6 +4,7 @@
             [clojure.string :as string]
             [reagent.core :as reagent]))
 
+
 (defn parabola-point-y [foc dir x]
   (let [a (:x foc)
         b (:y foc)
@@ -112,20 +113,50 @@
   [voronoi]
   (let [points-cursor (reagent/cursor voronoi [:points])
         completed-cursor (reagent/cursor voronoi [:completed])
-        [xmin xmax] [-50 1000]
-        [ymin ymax] [-50 800]
-        xwidth (- xmax xmin)
-        ywidth (- ymax ymin)
-        view-box (string/join " " [xmin ymin xwidth ywidth])
-        md (fn [ev] (println (let [rect (.getBoundingClientRect (.-target ev))]
-                               [(- (.-clientX ev) (.-left rect))
-                                (- (.-clientY ev) (.-top rect))])
-                             ))]
+        scroll (reagent/atom
+                {:x -80
+                 :y -200
+                 :x-width 1200
+                 :y-width 1800
+                 :prev nil})
+        handle-tm (fn [{:keys [prev x y]
+                        :as scroll} ev]
+                    (let [t (aget (.-touches ev) 0)
+                          scroll (assoc scroll :prev t)
+                          shift (.-shiftKey ev)
+                          ]
+
+                      (if prev
+                        (let [xdelta (- (.-screenX t)
+                                        (.-screenX prev))
+                              ydelta (- (.-screenY t)
+                                        (.-screenY prev))]
+                          (if shift
+                            (let [size nil]
+                              (-> scroll
+                                  (update :x-width - xdelta)
+                                  ;; (update :y-width - ydelta)
+                                  ))
+                            (-> scroll
+                                (update :x - xdelta)
+                                (update :y - ydelta))))
+                        scroll)))
+        tm (fn [ev]
+
+             (swap! scroll handle-tm ev))
+        clear (fn [ev]
+
+                (swap! scroll #(assoc % :prev nil)))
+        ]
     (fn []
-      [:div {:on-click md}
-       [:svg {:viewBox view-box
-              :preserveAspectRatio "xMidYMid meet"
-              }
-        [draw-points points-cursor]
-        [draw-completeds completed-cursor]
-        [draw-sweep-state voronoi (- xmin xwidth) (+ xmax xwidth)]]])))
+      (let [{:keys [x y x-width y-width]} @scroll
+            view-box (string/join " " [x y x-width y-width])]
+        [:div {:on-touch-move tm
+               :on-touch-end clear
+               :on-touch-cancel clear}
+         [:svg {:viewBox view-box
+                :preserveAspectRatio "xMaxYMax meet"
+                }
+          [draw-points points-cursor]
+          [draw-completeds completed-cursor]
+          [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))

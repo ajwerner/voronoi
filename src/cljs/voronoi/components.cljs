@@ -9,22 +9,51 @@
 
 (def initial-points points/some-cool-stuff)
 
+(enable-console-print!)
 (defn new-app-thing [db id]
   (swap! db #(if % % {:voronoi (vor/new-voronoi initial-points)
                       :id id}))
-  (let [vor (reagent/cursor db [:voronoi])]
+  (let [vor (reagent/cursor db [:voronoi])
+        width (reagent/atom {:active false
+                             :width 100
+                             })
+        md (fn [name]
+             (fn [ev]
+               ;; (println  name (let [rect (.getBoundingClientRect (.-target ev))]
+               ;;                           [(- (.-clientX ev) (.-left rect))
+               ;;                            (- (.-clientY ev) (.-top rect))])
+             ))
+
+        pe (fn [ev]
+             (swap! width identity ))
+             ]
     (fn []
       [:section.voronoi-widget {:id id}
-       [:div.graphics [voronoi-svg vor]]
+       [:div.graphics
+        {:style {:width (str @width "%")
+                 :position "fixed"
+                 :overflow "hidden"}
+         :on-touch-end (md :te)
+         :on-touch-start (md :ts)
+         :on-touch-move (md :tm)
+         :on-touch-cancel (md :tc)
+         :on-drag (md :d)
+         :on-drag-over (md :do)
+         :on-mouse-up (md :mu)
+         :on-mouse-down (md :md)
+         :on-mouse-over (md :mo)}
+        [voronoi-svg vor]]
        [control-panel db]
        [arc-table-and-toggle vor]])))
 
 (defn animation-playground [db]
-  [:div [:h2 "Voronoi diagrams"]
-   [:div
-    [:p "Just a pretty picture for now"]]
-   [new-app-thing db "animation-playground"]
-   [:div [:a {:href "/#intro"} "<- back"]]])
+  (let []
+    (fn []
+      [:div ;;[:h2 "Voronoi diagrams"]
+       ;; [:div
+       ;;  [:p "Just a pretty picture for now"]]
+       [new-app-thing db "animation-playground"]
+       [:div [:a {:href "/#intro"} "<- back"]]])))
 
 (defn intro []
   [:div [:h2 "Voronoi Diagrams"]
