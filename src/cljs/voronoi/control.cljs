@@ -52,8 +52,8 @@
 
 (defn now [] (.now js/Date))
 
-(def *interval* 18)
-(def *rate* 20)
+(def *interval* 16)
+(def *rate* 50)
 
 (defn run-timer-func [start register]
   (fn [{{last :last-update

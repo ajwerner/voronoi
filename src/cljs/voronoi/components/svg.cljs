@@ -139,7 +139,7 @@
                           (if shift
                             (let [size nil]
                               (-> scroll
-                                  (update :x-width - xdelta)
+                                  (update :x-width #(max (- % xdelta) 0))
                                   ;; (update :y-width - ydelta)
                                   ))
                             (-> scroll
