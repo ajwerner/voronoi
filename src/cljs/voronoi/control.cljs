@@ -53,7 +53,7 @@
 (defn now [] (.now js/Date))
 
 (def *interval* 18)
-(def *rate* 50)
+(def *rate* 20)
 
 (defn run-timer-func [start register]
   (fn [{{last :last-update
@@ -69,7 +69,7 @@
                 (do-set-by)
                 (assoc-in [:scan :last-update] t))
             after (now)
-            took (- now t)
+            took (- after t)
             wait (max 0 ( - *interval* took))]
         (register (run-timer-func t register) *interval*)
         state)

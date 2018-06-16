@@ -8,6 +8,8 @@
 ;; Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrecord Point [x y])
+
 (defn area2 [a b c]
   (- (* (- (:x b) (:x a))
         (- (:y c) (:y a)))
@@ -47,11 +49,13 @@
 (defn midpoint [a b]
   (let [x (/ (+ (:x a) (:x b)) 2)
         y (/ (+ (:y a) (:y b)) 2)]
-    {:x x :y y}))
+    (Point. x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Break Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrecord BreakPoint [left right edge side begin])
 
 (defn break-point-point [p sweep-y]
   (let [l (:left p)
@@ -67,12 +71,11 @@
                  (* 2 (- (:y l) sweep-y)))
             y (if (= y Infinity) -Infinity y)
             ]
-        {:x x :y y})
-      (let [use_left true
-            [px py] (if use_left
-                      [(:x l) (:y l)]
-                      [(:x r) (:y r)])
-            {m :m b :b} (:edge p)
+        (Point. x y))
+      (let [px (:x l)
+            py (:y l)
+            m (:m (:edge p))
+            b (:b (:edge p))
             d (* 2 (- py sweep-y))
             A 1
             B (- (* -2 px) (* d m))
@@ -89,24 +92,24 @@
                     (/ (* 2 C) num)
                     (/ num (* 2 A)))))
             y (+ (* m x) b)]
-        {:x x :y y})
-      )))
+        (Point. x y)))))
 
 (defn new-break-point [left right edge side y]
-  (let [p {:left left
-           :right right
-           :edge edge
-           :side side}
+  (let [p (BreakPoint. left right edge side 0)
         p (assoc p :begin (break-point-point p y))]
     p))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Edges
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrecord HalfEdge [site1 site2 m b is-vertical])
+
 (defn new-edge [s1 s2]
-  (let [isVeritcal (within-epsilon (:y s1) (:y s2) epsilon)
-        [m b] (if isVeritcal
+  (let [is-vertical (within-epsilon (:y s1) (:y s2) epsilon)
+        [m b] (if is-vertical
                 [Infinity 0]
                 (let [m (/ -1
                            (/ (- (:y s1) (:y s2))
@@ -115,11 +118,7 @@
                       b (- (:y mid)
                            (* m (:x mid)))]
                   [m b]))]
-    {:m m
-     :b b
-     :isVertical isVeritcal
-     :site1 s1
-     :site2 s2}))
+    (HalfEdge. s1 s2 m b is-vertical)))
 
 (defn intersect-edges [e1 e2]
   (let [vertIntersection (fn [v nv]
@@ -129,8 +128,8 @@
                                  y (+ (* (:m nv) x)
                                       (:b nv))]
                              [x y]))
-        v1 (:isVertical e1)
-        v2 (:isVertical e2)
+        v1 (:is-vertical e1)
+        v2 (:is-vertical e2)
         dontIntersect (or (and v1 v2)
                           (and (== (:m e1) (:m e2))
                                (not (== (:b e1) (:b e2)))))]
@@ -146,32 +145,29 @@
                                      (:b e1))]
                             [x y])
                     )]
-        {:x x :y y}))))
-
-
+        (Point. x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Arcs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn new-arc [breakLeft breakRight y]
-  (let [site (if-not (nil? breakLeft)
-               (:right breakLeft)
-               (:left breakRight))
+(defrecord Arc [point left right added-at])
+
+(defn new-arc [left right y]
+  (let [point (if-not (nil? left)
+                (:right left)
+                (:left right))
         ]
-    {:point site
-     :left breakLeft
-     :right breakRight
-     :added-at y}))
+    (Arc. point left right y)))
 
 (defn arc-left-point [arc sweep-y]
   (if (nil? (:left arc))
-    {:x -Infinity :y -Infinity}
+    (Point.  -Infinity -Infinity)
     (break-point-point (:left arc) sweep-y)))
 
 (defn arc-right-point [arc sweep-y]
   (if (nil? (:right arc))
-    {:x Infinity :y -Infinity}
+    (Point. Infinity -Infinity)
     (break-point-point (:right arc) sweep-y)))
 
 (defn arc-points [arc sweep-y]
@@ -242,11 +238,14 @@
             ]
         res)))
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Events
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrecord CircleEvent [x y vert arc])
+
+(defn is-circle [ev] (some? (:vert ev)))
+
 (defn event-comparator [a b]
   (let [ay (:y a)
         by (:y b)
@@ -254,8 +253,8 @@
             (compare ay by))]
     (if (and (some? c) (not= c 0))
       c
-      (let [aCircle (= (:type a) :circle)
-            bCircle (= (:type b) :circle)
+      (let [aCircle (is-circle a)
+            bCircle (is-circle b)
             aCcw (ccw a (:vert a) (:point (:arc a)))
             bCcw (ccw b (:vert b) (:point (:arc b)))
             oCcw (ccw (:point (:arc a)) (:vert a) (:point (:arc b)))
@@ -264,7 +263,7 @@
                      (within-epsilon (:x (:vert a)) (:x (:vert b)) epsilon))
             breaker (cond
                       (not (or aCircle bCircle)) cx
-                      (and aCircle (not bCircle))  -1
+                      (and aCircle (not bCircle)) -1
                       (and bCircle (not aCircle)) 1
                       :else (arc-comparator (:arc a) (:arc b)))]
         breaker))))
@@ -286,11 +285,13 @@
 
 (defrecord VoronoiBuilder [input points scan events edges complete breaks arcs])
 
-(defn new-voronoi [points]
+(defn new-voronoi [input]
   "Returns a map representing a voronoi builder"
-  (let [events (into (sorted-set-by event-comparator) points)
+  (let [points (map map->Point input)
+        events (into (sorted-set-by event-comparator) points)
         scan (:y (first events))]
-    (map->VoronoiBuilder {:points points
+    (map->VoronoiBuilder {:input input
+                          :points points
                           :scan scan
                           :events events
                           :edges []
@@ -298,27 +299,12 @@
                           :breaks #{}
                           :arcs (sorted-map-by arc-comparator)})))
 
-
-;; (defn new-voronoi [points]
-;;   "Returns a map representing a voronoi builder"
-;;   (let [events (into (sorted-set-by event-comparator) points)
-;;         scan (:y (first events))]
-;;     {:points points
-;;      :scan scan
-;;      :events events
-;;      :edges []
-;;      :completed []
-;;      :breaks #{}
-;;      :arcs (sorted-map-by arc-comparator)}))
-
 (defn check-for-circle-event [vor arc]
   (if-let [center (check-circle arc)]
     (let [rad (distance (:point arc) center)
-          ev {:type :circle
-              :x (:x center)
-              :y (+ (:y center) rad)
-              :vert center
-              :arc arc}]
+          x (:x center)
+          y (+ (:y center) rad)
+          ev (CircleEvent. x y center arc)]
       (-> vor
           (update :events #(conj % ev))
           (update :arcs #(assoc % arc ev))))
@@ -393,8 +379,8 @@
         breakR (:right arcAbove)
         newBreakL (new-break-point (:point arcAbove) ev newEdge :left y)
         newBreakR (new-break-point ev (:point arcAbove) newEdge :right y)
-        ivl (:isVertical (:edge newBreakL))
-        ivr (:isVertical (:edge newBreakR))
+        ivl (:is-vertical (:edge newBreakL))
+        ivr (:is-vertical (:edge newBreakR))
         sameX (within-epsilon (:x (:begin newBreakR))
                               (:x (:begin newBreakL))
                               epsilon)
@@ -451,7 +437,7 @@
 
 (defn handle-event [{events :events :as vor}]
   (let [ev (first events)
-        handler (if (= (:type ev) :circle)
+        handler (if (is-circle ev)
                   handle-circle-event
                   handle-site-event)]
     (if-not ev vor

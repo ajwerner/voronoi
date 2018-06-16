@@ -53,8 +53,10 @@
   (fn []
     [:g
      (doall
-      (for [{x :x y :y :as p} @points-cursor]
-             ^{:key p} [:circle {:cx x :cy y :r 1 :stroke "black"}]))]))
+      (map-indexed
+       (fn [i {x :x y :y :as p}]
+         ^{:key i} [:circle {:cx x :cy y :r 1 :stroke "black"}])
+       @points-cursor))]))
 
 
 (defn line [x1 y1 x2 y2 attrs]
@@ -95,7 +97,10 @@
     ^{:key bp} (line  bx by px py {:stroke "red"})))
 
 (defn draw-breaks [breaks y]
-  [:g (for [bp breaks] ^{:key bp} [draw-break bp y])])
+  [:g
+   (map-indexed
+    (fn [i bp] ^{:key i} [draw-break bp y i])
+    breaks)])
 
 (defn draw-sweep-state [voronoi xmin xmax]
   (fn []
@@ -110,7 +115,7 @@
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
-  [voronoi viewbox-]
+  [voronoi]
   (let [points-cursor (reagent/cursor voronoi [:points])
         completed-cursor (reagent/cursor voronoi [:completed])
         scroll (reagent/atom
@@ -134,7 +139,7 @@
                           (if shift
                             (let [size nil]
                               (-> scroll
-                                  (update :x-width #(max 0 (- % xdelta)))
+                                  (update :x-width - xdelta)
                                   ;; (update :y-width - ydelta)
                                   ))
                             (-> scroll
@@ -147,19 +152,16 @@
         clear (fn [ev]
 
                 (swap! scroll #(assoc % :prev nil)))
-        on-resize (fn [ev]
-                    (.log js/console ev))
         ]
     (fn []
       (let [{:keys [x y x-width y-width]} @scroll
             view-box (string/join " " [x y x-width y-width])]
         [:div {:on-touch-move tm
                :on-touch-end clear
-               :onresize on-resize
                :on-touch-cancel clear}
          [:svg {:viewBox view-box
-                :preserveAspectRatio "xMaxYMax slice"
-                }
+                :preserveAspectRatio "xMaxYMax meet"}
+
           [draw-points points-cursor]
           [draw-completeds completed-cursor]
           [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))
