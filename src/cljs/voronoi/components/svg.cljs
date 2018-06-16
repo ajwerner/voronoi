@@ -147,12 +147,15 @@
         clear (fn [ev]
 
                 (swap! scroll #(assoc % :prev nil)))
+        on-resize (fn [ev]
+                    (.log js/console ev))
         ]
     (fn []
       (let [{:keys [x y x-width y-width]} @scroll
             view-box (string/join " " [x y x-width y-width])]
         [:div {:on-touch-move tm
                :on-touch-end clear
+               :onresize on-resize
                :on-touch-cancel clear}
          [:svg {:viewBox view-box
                 :preserveAspectRatio "xMaxYMax slice"

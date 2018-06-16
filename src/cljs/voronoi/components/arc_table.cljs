@@ -1,6 +1,7 @@
 (ns voronoi.components.arc-table
   (:require [reagent.core :as reagent :refer [atom]]
-            [voronoi.voronoi :as vor]))
+            [voronoi.voronoi :as vor]
+            [voronoi.basic-geometry :refer [distance]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Arc Table
@@ -26,7 +27,7 @@
        (let [{:keys [arcs scan]} @vor]
          (for [arc (keys arcs)]
            (let [[l r] (vor/arc-points arc scan)
-                 len (vor/distance l r)]
+                 len (distance l r)]
              ^{:key arc}
              [:tr
               [:td (str l) ]

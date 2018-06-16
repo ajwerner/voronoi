@@ -50,11 +50,10 @@
 (defn do-set-to! [state-atom to]
   (swap! state-atom (comp (do-set-to-f to) pause)))
 
-
 (defn now [] (.now js/Date))
 
-(def *interval* 100)
-(def *rate* 20)
+(def *interval* 18)
+(def *rate* 50)
 
 (defn run-timer-func [start register]
   (fn [{{last :last-update

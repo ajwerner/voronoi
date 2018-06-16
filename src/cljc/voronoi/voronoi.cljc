@@ -1,41 +1,9 @@
 (ns voronoi.voronoi
   (:require [clojure.string :as str]
-            [voronoi.util :refer [Infinity -Infinity]]))
-
-(def doPrint false)
-
-(defn printl [& args]
-  (if doPrint (apply println args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Basic Geometry
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def MIN_NUMBER js/Number.MIN_VALUE)
-(def MAN_NUMBER js/Number.MAX_VALUE)
-
-
-(defn sq [x] (* x x))
-
-(defn abs [n] (max n (- n)))
-
-(defn sqrt [v]
-  (.sqrt js/Math v))
+            [voronoi.util :refer [Infinity -Infinity sqrt isNaN?]]
+            [voronoi.basic-geometry :refer [sq abs within-epsilon distance length]]))
 
 (def epsilon 1e-8)
-
-(defn within-epsilon [a b epsilon]
-  (< (abs (- a b)) epsilon))
-
-(defn distance [a b]
-  (let [[{x1 :x y1 :y} {x2 :x y2 :y}] [a b]
-        dist (sqrt (+ (sq (- x1 x2))
-                      (sq (- y1 y2))))]
-    dist))
-
-(defn length [x y]
-  (sqrt (+ (sq x) (sq y))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,17 +283,33 @@
           ]
       (recur (rest to-process) processed))))
 
+
+(defrecord VoronoiBuilder [input points scan events edges complete breaks arcs])
+
 (defn new-voronoi [points]
   "Returns a map representing a voronoi builder"
   (let [events (into (sorted-set-by event-comparator) points)
         scan (:y (first events))]
-    {:points points
-     :scan scan
-     :events events
-     :edges []
-     :completed []
-     :breaks #{}
-     :arcs (sorted-map-by arc-comparator)}))
+    (map->VoronoiBuilder {:points points
+                          :scan scan
+                          :events events
+                          :edges []
+                          :completed []
+                          :breaks #{}
+                          :arcs (sorted-map-by arc-comparator)})))
+
+
+;; (defn new-voronoi [points]
+;;   "Returns a map representing a voronoi builder"
+;;   (let [events (into (sorted-set-by event-comparator) points)
+;;         scan (:y (first events))]
+;;     {:points points
+;;      :scan scan
+;;      :events events
+;;      :edges []
+;;      :completed []
+;;      :breaks #{}
+;;      :arcs (sorted-map-by arc-comparator)}))
 
 (defn check-for-circle-event [vor arc]
   (if-let [center (check-circle arc)]
@@ -335,7 +319,6 @@
               :y (+ (:y center) rad)
               :vert center
               :arc arc}]
-      ;;(printl "adding circle event " ev "\n" vor)
       (-> vor
           (update :events #(conj % ev))
           (update :arcs #(assoc % arc ev))))
@@ -417,7 +400,7 @@
                               epsilon)
         newVertical (and ivl ivr sameX)
         newBreakR (if (and newVertical
-                           (js/isNaN (:y (:begin newBreakR))))
+                           (isNaN? (:y (:begin newBreakR))))
                     (assoc-in newBreakR [:begin :y] (:y (:begin breakR)))
                     newBreakR)
         newVertBreak (if-not newVertical
@@ -430,7 +413,7 @@
                                                    (:x (:begin (:edge breakR)))
                                                    epsilon))
         newVertBreak (if (and newVertical
-                              (js/isNaN (:y (:begin newVertBreak))))
+                              (isNaN? (:y (:begin newVertBreak))))
                        (assoc-in newVertBreak [:begin :y] (:y (:begin breakL)))
                        newVertBreak)
         [arcLeft
