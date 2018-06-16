@@ -110,7 +110,7 @@
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
-  [voronoi]
+  [voronoi viewbox-]
   (let [points-cursor (reagent/cursor voronoi [:points])
         completed-cursor (reagent/cursor voronoi [:completed])
         scroll (reagent/atom
@@ -134,7 +134,7 @@
                           (if shift
                             (let [size nil]
                               (-> scroll
-                                  (update :x-width - xdelta)
+                                  (update :x-width #(max 0 (- % xdelta)))
                                   ;; (update :y-width - ydelta)
                                   ))
                             (-> scroll
@@ -155,7 +155,7 @@
                :on-touch-end clear
                :on-touch-cancel clear}
          [:svg {:viewBox view-box
-                :preserveAspectRatio "xMaxYMax meet"
+                :preserveAspectRatio "xMaxYMax slice"
                 }
           [draw-points points-cursor]
           [draw-completeds completed-cursor]

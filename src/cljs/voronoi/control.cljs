@@ -53,7 +53,7 @@
 
 (defn now [] (.now js/Date))
 
-(def *interval* 12)
+(def *interval* 100)
 (def *rate* 20)
 
 (defn run-timer-func [start register]
@@ -65,17 +65,23 @@
       (let [t (now)
             delta-t (- t last)
             delta (* (/ *rate* 1000.0 ) delta-t)
-            do-set-by (do-set-by-f delta)]
+            do-set-by (do-set-by-f delta)
+            state (-> state
+                (do-set-by)
+                (assoc-in [:scan :last-update] t))
+            after (now)
+            took (- now t)
+            wait (max 0 ( - *interval* took))]
         (register (run-timer-func t register) *interval*)
-        (-> state
-            (do-set-by)
-            (assoc-in [:scan :last-update] t))))))
+        state)
+      )))
 
 (defn update-pause-scan-state [state update-paused-f state-atom]
   (let [now-paused (update-paused-f (:paused (:scan state)))]
     (if now-paused
       (pause state)
       (let [t (now)
+            update-fn (fn [])
             register
             (fn [f interval]
               (js/setTimeout #(swap! state-atom f) interval))
