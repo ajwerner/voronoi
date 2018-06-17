@@ -5,7 +5,7 @@
 ;; Basic Geometry
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn sq [x] (* x x))
+ (defn sq [x] (* x x))
 
 (defn abs [n] (max n (- n)))
 
@@ -17,6 +17,7 @@
         dist (sqrt (+ (sq (- x1 x2))
                       (sq (- y1 y2))))]
     dist))
+(def epsilon 1e-8)
 
-(defn length [x y]
-  (sqrt (+ (sq x) (sq y))))
+(defn close [a b]
+  (within-epsilon a b epsilon))

@@ -55,7 +55,7 @@
      (doall
       (map-indexed
        (fn [i {x :x y :y :as p}]
-         ^{:key i} [:circle {:cx x :cy y :r 1 :stroke "black"}])
+         ^{:key i} [:circle {:cx x :cy y :r .1 :stroke "black"}])
        @points-cursor))]))
 
 

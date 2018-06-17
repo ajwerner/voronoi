@@ -10,12 +10,10 @@
 ;; -------------------------
 ;; State
 
-(def app-state (atom {:animation-page nil}))
-(def animation-playground-page
+(defonce app-state (atom {:animation-page nil}))
+(defonce animation-playground-page
   #(animation-playground
     (reagent/cursor app-state [:animation-page])))
-(def initial-points (p/random-points 421) )
-(reset-state! app-state initial-points)
 
 ;; -------------------------
 ;; Views

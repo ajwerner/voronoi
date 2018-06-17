@@ -7,7 +7,7 @@
             [voronoi.components.svg :refer [voronoi-svg]]
             [voronoi.components.control-panel :refer [control-panel]]))
 
-(def initial-points points/some-cool-stuff)
+(defonce initial-points points/some-cool-stuff)
 
 (enable-console-print!)
 (defn new-app-thing [db id]

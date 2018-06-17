@@ -1,77 +1,30 @@
 (ns voronoi.voronoi
   (:require [clojure.string :as str]
             [voronoi.util :refer [Infinity -Infinity sqrt isNaN?]]
-            [voronoi.basic-geometry :refer [sq abs within-epsilon distance length]]))
-
-(def epsilon 1e-8)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Points
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrecord Point [x y])
-
-(defn area2 [a b c]
-  (- (* (- (:x b) (:x a))
-        (- (:y c) (:y a)))
-     (* (- (:y b) (:y a))
-        (- (:x c) (:x a)))))
-
-(defn ccw [a b c]
-  (let [a (area2 a b c)]
-    (cond
-      (< a 0) -1
-      (> a 0) 1
-      :else   0)))
-
-(defn x-ordered-point-comparator [a b]
-  (let [c (compare (:x a) (:x b))]
-    (if (not= c 0)
-      c
-      (compare (:y a) (:y b)))))
-
-(defn dim-epsilon-comparator [dim epsilon]
-  (fn [a b]
-    (let [ad (dim a)
-          bd (dim b)
-          veryclose (within-epsilon ad bd epsilon)]
-      (if veryclose 0 (compare ad bd)))))
-
-(defn dims-epsilon-comparator [d1 d2 epsilon]
-  (let [d1-comp (dim-epsilon-comparator d1 epsilon)
-        d2-comp (dim-epsilon-comparator d2 epsilon)]
-    (fn [a b]
-      (let [c (d1-comp a b)]
-        (if (not= 0 c) c (d2-comp a b))))))
-
-(def y-ordered-epsilon-point-comparator
-  (dims-epsilon-comparator :y :x epsilon))
-
-(defn midpoint [a b]
-  (let [x (/ (+ (:x a) (:x b)) 2)
-        y (/ (+ (:y a) (:y b)) 2)]
-    (Point. x y)))
+            [voronoi.basic-geometry :refer [sq abs close distance]]
+            [voronoi.point :refer [->Point map->Point
+                                   y-ordered-epsilon-comparator
+                                   x-ordered-comparator
+                                   ccw midpoint]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Break Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrecord BreakPoint [left right edge side begin])
 
 (defn break-point-point [p sweep-y]
   (let [l (:left p)
         r (:right p)]
-    (if (within-epsilon (:y l) (:y r) epsilon)
+    (if (close (:y l) (:y r))
       ;; vertical line case
-      (let [
-            x (/ (+ (:x l) (:x r))
+      (let [x (/ (+ (:x l) (:x r))
                  2)
             y (/ (+ (sq (- x (:x l)))
                     (sq (:y l))
                     (* -1 (sq sweep-y)))
                  (* 2 (- (:y l) sweep-y)))
-            y (if (= y Infinity) -Infinity y)
-            ]
-        (Point. x y))
+            y (if (= y Infinity) -Infinity y)]
+        (->Point x y))
       (let [px (:x l)
             py (:y l)
             m (:m (:edge p))
@@ -92,14 +45,12 @@
                     (/ (* 2 C) num)
                     (/ num (* 2 A)))))
             y (+ (* m x) b)]
-        (Point. x y)))))
+        (->Point x y)))))
 
 (defn new-break-point [left right edge side y]
-  (let [p (BreakPoint. left right edge side 0)
+  (let [p (->BreakPoint left right edge side 0)
         p (assoc p :begin (break-point-point p y))]
     p))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Edges
@@ -108,7 +59,7 @@
 (defrecord HalfEdge [site1 site2 m b is-vertical])
 
 (defn new-edge [s1 s2]
-  (let [is-vertical (within-epsilon (:y s1) (:y s2) epsilon)
+  (let [is-vertical (close (:y s1) (:y s2))
         [m b] (if is-vertical
                 [Infinity 0]
                 (let [m (/ -1
@@ -118,38 +69,34 @@
                       b (- (:y mid)
                            (* m (:x mid)))]
                   [m b]))]
-    (HalfEdge. s1 s2 m b is-vertical)))
+    (->HalfEdge s1 s2 m b is-vertical)))
+
+(defn vertical-intersection [vert-edge non-vert-edge]
+  (let [x (/ (+ (:x (:site1 vert-edge))
+                (:x (:site2 vert-edge)))
+             2)
+        y (+ (* (:m non-vert-edge) x)
+             (:b non-vert-edge))]
+    (->Point x y)))
 
 (defn intersect-edges [e1 e2]
-  (let [vertIntersection (fn [v nv]
-                           (let [x (/ (+ (:x (:site1 v))
-                                         (:x (:site2 v)))
-                                      2)
-                                 y (+ (* (:m nv) x)
-                                      (:b nv))]
-                             [x y]))
-        v1 (:is-vertical e1)
-        v2 (:is-vertical e2)
-        dontIntersect (or (and v1 v2)
-                          (and (== (:m e1) (:m e2))
-                               (not (== (:b e1) (:b e2)))))]
-    (if dontIntersect
-      nil
-      (let [[x y] (cond
-                    (and v1 v2) nil
-                    v1 (vertIntersection e1 e2)
-                    v2 (vertIntersection e2 e1)
-                    :else (let [x (/ (- (:b e2) (:b e1))
-                                     (- (:m e1) (:m e2)))
-                                y (+ (* (:m e1) x)
-                                     (:b e1))]
-                            [x y])
-                    )]
-        (Point. x y)))))
+  (let [v1 (:is-vertical e1)
+        v2 (:is-vertical e2)]
+    (cond
+      (and v1 v2) nil
+      v1 (vertical-intersection e1 e2)
+      v2 (vertical-intersection e2 e1)
+      (and (== (:m e1) (:m e2))
+           (not (== (:b e1) (:b e2)))) nil
+      :else (let [x (/ (- (:b e2) (:b e1))
+                       (- (:m e1) (:m e2)))
+                  y (+ (* (:m e1) x)
+                       (:b e1))]
+              (->Point x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Arcs
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrecord Arc [point left right added-at])
 
@@ -158,24 +105,23 @@
                 (:right left)
                 (:left right))
         ]
-    (Arc. point left right y)))
+    (->Arc point left right y)))
 
 (defn arc-left-point [arc sweep-y]
   (if (nil? (:left arc))
-    (Point.  -Infinity -Infinity)
+    (->Point -Infinity -Infinity)
     (break-point-point (:left arc) sweep-y)))
 
 (defn arc-right-point [arc sweep-y]
   (if (nil? (:right arc))
-    (Point. Infinity -Infinity)
+    (->Point Infinity -Infinity)
     (break-point-point (:right arc) sweep-y)))
 
 (defn arc-points [arc sweep-y]
   (map #(% arc sweep-y) [arc-left-point arc-right-point]))
 
 (defn check-circle [arc]
-  (let [
-        l (:left arc)
+  (let [l (:left arc)
         r (:right arc)
         haveNil (or (nil? l) (nil? r))
         ccwv (if-not haveNil
@@ -194,8 +140,7 @@
 
 (defn arc-comparator [a b]
   (if (= a b) 0
-      (let [
-            aq (:query a)
+      (let [aq (:query a)
             bq (:query b)
             isQuery (or aq bq)
             y (if isQuery
@@ -208,13 +153,13 @@
                     (and (< (:x nql) (:x ql))
                             (or
                              (< (:x nqr) (:x qr))
-                             (within-epsilon (:x nqr) (:x ql) epsilon))
-                            (not (within-epsilon (:x nql) (:x ql) epsilon))))
+                             (close (:x nqr) (:x ql)))
+                            (not (close (:x nql) (:x ql)))))
             res (cond
                   aq (if (q-less [al ar] [bl br]) 1 -1)
                   bq (if (q-less [bl br] [al ar]) -1 1)
-                  (and (within-epsilon (:x al) (:x bl) epsilon)
-                       (within-epsilon (:x ar) (:x br) epsilon))
+                  (and (close (:x al) (:x bl))
+                       (close (:x ar) (:x br)))
                   (let [aCcw (ccw (update al :y + 1000) al (:point a))
                         bCcw (ccw (update bl :y + 1000) bl (:point  b))
                         oCcw (ccw (:point a) al (:point b))
@@ -229,11 +174,11 @@
                         (and (nil? (:left b))
                              (some? (:left a))) 1
                         (not= 0 oCcw) oCcw
-                        :else (x-ordered-point-comparator
+                        :else (x-ordered-comparator
                                (:point a) (:point b)))))
                   :else (let [mpa (midpoint al ar)
                               mpb (midpoint bl br)
-                              c (x-ordered-point-comparator mpa mpb)]
+                              c (x-ordered-comparator mpa mpb)]
                           c))
             ]
         res)))
@@ -244,12 +189,12 @@
 
 (defrecord CircleEvent [x y vert arc])
 
-(defn is-circle [ev] (some? (:vert ev)))
+(defn is-circle [ev] (instance? CircleEvent ev))
 
 (defn event-comparator [a b]
   (let [ay (:y a)
         by (:y b)
-        c (if-not (within-epsilon ay by epsilon)
+        c (if-not (close ay by)
             (compare ay by))]
     (if (and (some? c) (not= c 0))
       c
@@ -260,7 +205,7 @@
             oCcw (ccw (:point (:arc a)) (:vert a) (:point (:arc b)))
             cx (compare (:x a) (:x b))
             weVert (if (and aCircle bCircle)
-                     (within-epsilon (:x (:vert a)) (:x (:vert b)) epsilon))
+                     (close (:x (:vert a)) (:x (:vert b))))
             breaker (cond
                       (not (or aCircle bCircle)) cx
                       (and aCircle (not bCircle)) -1
@@ -275,7 +220,7 @@
 
 (defn build-points [initial-points]
   (loop [to-process initial-points
-         processed (sorted-set-by y-ordered-epsilon-point-comparator)]
+         processed (sorted-set-by y-ordered-epsilon-comparator)]
     (let [cur (first to-process)
           exists (contains? processed cur)
           processed (if-not exists (processed cur) processed)
@@ -304,7 +249,7 @@
     (let [rad (distance (:point arc) center)
           x (:x center)
           y (+ (:y center) rad)
-          ev (CircleEvent. x y center arc)]
+          ev (->CircleEvent x y center arc)]
       (-> vor
           (update :events #(conj % ev))
           (update :arcs #(assoc % arc ev))))
@@ -381,9 +326,8 @@
         newBreakR (new-break-point ev (:point arcAbove) newEdge :right y)
         ivl (:is-vertical (:edge newBreakL))
         ivr (:is-vertical (:edge newBreakR))
-        sameX (within-epsilon (:x (:begin newBreakR))
-                              (:x (:begin newBreakL))
-                              epsilon)
+        sameX (close (:x (:begin newBreakR))
+                     (:x (:begin newBreakL)))
         newVertical (and ivl ivr sameX)
         newBreakR (if (and newVertical
                            (isNaN? (:y (:begin newBreakR))))
@@ -395,9 +339,7 @@
 
         eventIsOnVerticalLine (and (= :vert
                                       (:side (:edge breakR)))
-                                   (within-epsilon (:x ev)
-                                                   (:x (:begin (:edge breakR)))
-                                                   epsilon))
+                                   (close  (:x ev) (:x (:begin (:edge breakR)))))
         newVertBreak (if (and newVertical
                               (isNaN? (:y (:begin newVertBreak))))
                        (assoc-in newVertBreak [:begin :y] (:y (:begin breakL)))

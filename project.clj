@@ -70,7 +70,7 @@
               :output-to "target/cljsbuild/public/js/app.js"
               :output-dir "target/cljsbuild/public/js/out"
               :source-map true
-              :optimizations :none
+              :optimizations :advanced
               :pretty-print  true}}}
    }
 
