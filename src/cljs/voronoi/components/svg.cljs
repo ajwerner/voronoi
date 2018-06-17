@@ -1,6 +1,8 @@
 (ns voronoi.components.svg
   (:require [voronoi.util :refer [Infinity -Infinity isNaN?]]
             [voronoi.voronoi :as vor]
+            [voronoi.arc :as arc]
+            [voronoi.break-point :refer [break-point-point]]
             [clojure.string :as string]
             [reagent.core :as reagent]))
 
@@ -40,10 +42,10 @@
 (defn draw-parabolas [arcs y xmin xmax]
   (if (> (count arcs) 0)
     (let [parabolas (for [arc (keys arcs)]
-                      (let [arcL (vor/arc-left-point arc y)
-                            arcR (vor/arc-right-point arc y)
-                            xmin (min (max (:x arcL) xmin) xmax)
-                            xmax (max (min (:x arcR) xmax) xmin)
+                      (let [arc-l (arc/left-bound arc y)
+                            arc-r (arc/right-bound arc y)
+                            xmin (min (max (:x arc-l) xmin) xmax)
+                            xmax (max (min (:x arc-r) xmax) xmin)
                             foc (:point arc)]
                         (if-not (= xmin xmax)
                           (draw-parabola (:point arc) y xmin xmax))))]
@@ -93,7 +95,7 @@
 
 (defn draw-break [bp y]
   (let [{bx :x by :y} (:begin bp)
-        {px :x py :y} (vor/break-point-point bp y)]
+        {px :x py :y} (break-point-point bp y)]
     ^{:key bp} (line  bx by px py {:stroke "red"})))
 
 (defn draw-breaks [breaks y]
