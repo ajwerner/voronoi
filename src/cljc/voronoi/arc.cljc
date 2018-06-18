@@ -60,8 +60,7 @@
         r (:right arc)
         haveNil (or (nil? l) (nil? r))
         ccwv (if-not haveNil
-               (ccw (:left l) (:point arc) (:right r)))
-        ]
+               (ccw (:left l) (:point arc) (:right r)))]
     (cond
       haveNil nil
       (not (= 1 ccwv)) nil

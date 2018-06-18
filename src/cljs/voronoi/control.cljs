@@ -38,7 +38,9 @@
           to (yf state)
           state (cond
                   (nil? to) state
-                  (>= to s) (update state :voronoi #(vor/scan-to % to))
+                  (>= to s) (do
+                              (println "hi hi" to)
+                              (update state :voronoi #(vor/scan-to % to)))
                   (< to s) (update state :voronoi #(vor/reset-to % to)))]
       state)))
 
