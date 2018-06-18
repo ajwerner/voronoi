@@ -21,7 +21,11 @@
 (defn reset-state [points]
   (let [state (reset-scan
                {:points points
-                :display-state {:show-table false}})
+                :display-state {:show-table false}
+                :scroll {:x -200
+                         :y -80
+                         :x-width 1800
+                         :y-width 1200}})
         state (pause state)]
     state))
 

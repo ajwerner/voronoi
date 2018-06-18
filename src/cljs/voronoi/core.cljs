@@ -10,7 +10,7 @@
 ;; -------------------------
 ;; State
 
-(defonce app-state (atom {:animation-page nil}))
+(defonce  app-state (atom {:animation-page nil}))
 (defonce animation-playground-page
   #(animation-playground
     (reagent/cursor app-state [:animation-page])))

@@ -11,7 +11,7 @@
 
 (defn is-circle [ev] (instance? CircleEvent ev))
 
-(defn comparator [a b]
+(defn event-comparator [a b]
   (let [ay (:y a)
         by (:y b)
         c (if-not (u/close ay by)
@@ -24,11 +24,9 @@
             bCcw (point/ccw b (:vert b) (:point (:arc b)))
             oCcw (point/ccw (:point (:arc a)) (:vert a) (:point (:arc b)))
             cx (compare (:x a) (:x b))
-            weVert (if (and aCircle bCircle)
-                     (u/close (:x (:vert a)) (:x (:vert b))))
             breaker (cond
                       (not (or aCircle bCircle)) cx
                       (and aCircle (not bCircle)) -1
                       (and bCircle (not aCircle)) 1
-                      :else (arc/comparator (:arc a) (:arc b)))]
+                      :else (arc/arc-comparator (:arc a) (:arc b)))]
         breaker))))

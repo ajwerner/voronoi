@@ -104,14 +104,18 @@
                 (grid 10 [100 100] 30 30)
                 (grid 10 [85 115] 30 30)))
 
-(def some-cool-stuff (concat
- (circle-points 200 200 550 300)
- (circle-points 280 250 200 300)
- (circle-points 50 50 200 300)
- (circle-points 100 300 725 300)
- (circle-points 200 100 300 400)
- (circle-points 200 200  300 550)
- (circle-points 400 100  300 550)))
+(def some-cool-stuff
+  (disj
+   (set
+    (concat
+     (circle-points 200 200 550 300)
+     (circle-points 280 250 200 300)
+     (circle-points 50 50 200 300)
+     (circle-points 100 300 725 300)
+     (circle-points 200 100 300 400)
+     (circle-points 200 200  300 550)
+     (circle-points 400 100  300 550)))
+   {:x 200 :y 550}))
 
 (def bad-shit
   (points-lists-to-points

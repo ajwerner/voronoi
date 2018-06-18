@@ -73,10 +73,14 @@
     [arc arc]
     (arc-points arc y)))
 
+(defn q-less [ql qr nql nqr]
+  (and (< (:x nql) (:x ql))
+       (or
+        (< (:x nqr) (:x qr))
+        (close (:x nqr) (:x ql)))
+       (not (close (:x nql) (:x ql)))))
 
-(defn real-arc-comparator [a b]
-  (if (nil? a)
-    (println "WTF!" a b))
+(defn arc-comparator [a b]
   (if (= a b) 0
       (let [aq (:query a)
             bq (:query b)
@@ -84,18 +88,13 @@
             y (if isQuery
                 (if aq (:y a) (:y b))
                 (max (:added-at a) (:added-at b)))
-            [{alx :x aly :y :as al}
-             {arx :x ary :y :as ar}] (arc-comp-points a y)
-            [bl br] (arc-comp-points b y)
-            q-less (fn [[ql qr :as q] [nql nqr :as nq]]
-                     (and (< (:x nql) (:x ql))
-                            (or
-                             (< (:x nqr) (:x qr))
-                             (close (:x nqr) (:x ql)))
-                            (not (close (:x nql) (:x ql)))))
+            al (if aq a (left-bound a y))
+            ar (if aq a (right-bound a y))
+            bl (if bq b (left-bound b y))
+            br (if bq b (right-bound b y))
             res (cond
-                  aq (if (q-less [al ar] [bl br]) 1 -1)
-                  bq (if (q-less [bl br] [al ar]) -1 1)
+                  aq (if (q-less al ar bl br) 1 -1)
+                  bq (if (q-less bl br al ar) -1 1)
                   (and (close (:x al) (:x bl))
                        (close (:x ar) (:x br)))
                   (let [aCcw (ccw (update al :y + 1000) al (:point a))
@@ -119,8 +118,3 @@
                               c (x-ordered-comparator mpa mpb)]
                           c))]
         res)))
-
-(defn comparator [a b]
-  (let [c (real-arc-comparator a b)]
-    ;; (println a b c)
-    c))

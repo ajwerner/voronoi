@@ -12,16 +12,19 @@
 (enable-console-print!)
 (defn new-app-thing [db id]
   (swap! db #(if % % {:voronoi (vor/new-voronoi initial-points)
-                      :id id}))
-  (let [vor (reagent/cursor db [:voronoi])]
+                      :id id
+                      :scroll nil}))
+  (let [vor (reagent/cursor db [:voronoi])
+        scroll (reagent/cursor db [:scroll])]
     (fn []
       [:section.voronoi-widget {:id id}
        [:div.graphics
         {:style {:position "fixed"
                  :overflow "hidden"}}
-        [voronoi-svg vor]]
+        [voronoi-svg vor scroll]]
        [control-panel db]
        [arc-table-and-toggle vor]
+       ;; [events-panel vor]
        ])))
 
 (defn animation-playground [db]

@@ -14,11 +14,12 @@
       ;; vertical line case
       (let [x (/ (+ (:x l) (:x r))
                  2)
-            y (/ (+ (sq (- x (:x l)))
-                    (sq (:y l))
-                    (* -1 (sq sweep-y)))
-                 (* 2 (- (:y l) sweep-y)))
-            y (if (= y Infinity) -Infinity y)]
+            y (if (= (:y l) sweep-y)
+                sweep-y
+                (/ (+ (sq (- x (:x l)))
+                      (sq (:y l))
+                      (* -1 (sq sweep-y)))
+                   (* 2 (- (:y l) sweep-y))))]
         (->Point x y))
       (let [px (:x l) ;; we could imagine using r rather than l
             py (:y l)
@@ -40,6 +41,8 @@
                     (/ (* 2 C) num)
                     (/ num (* 2 A)))))
             y (+ (* m x) b)]
+        (if (isNaN? y)
+          (println "hi " p sweep-y))
         (->Point x y)))))
 
 (defn new-break-point [left right edge side y]

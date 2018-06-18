@@ -21,7 +21,7 @@
 (defn new-voronoi [input]
   "Returns a map representing a voronoi builder"
   (let [points (map point/map->Point input)
-        events (into (sorted-set-by event/comparator) points)
+        events (into (sorted-set-by event/event-comparator) points)
         scan (:y (first events))]
     (map->VoronoiBuilder {:input input
                           :points points
@@ -30,7 +30,7 @@
                           :edges []
                           :completed []
                           :breaks #{}
-                          :arcs (sorted-map-by arc/comparator)})))
+                          :arcs (sorted-map-by arc/arc-comparator)})))
 
 (defn check-for-circle-event [vor arc]
   (if-let [center (arc/check-circle arc)]
@@ -132,15 +132,16 @@
                               (isNaN? (:y (:begin newVertBreak))))
                        (assoc-in newVertBreak [:begin :y] (:y (:begin breakL)))
                        newVertBreak)
-        [arcLeft
-         arcCenter
-         arcRight] (if newVertical
-                     [(arc/new-arc breakL newVertBreak y)
-                      nil
-                      (arc/new-arc newVertBreak breakR y)]
-                     [(arc/new-arc breakL newBreakL y)
-                      (arc/new-arc newBreakL newBreakR y)
-                      (arc/new-arc newBreakR breakR y)])]
+        arcLeft (if newVertical
+                  (arc/new-arc breakL newVertBreak y)
+                  (arc/new-arc breakL newBreakL y))
+        arcCenter (if newVertical
+                    nil
+                    (arc/new-arc newBreakL newBreakR y))
+        arcRight (if newVertical
+                   (arc/new-arc newVertBreak breakR y)
+                   (arc/new-arc newBreakR breakR y))
+        ]
     (-> vor
         (assoc :scan y)
         (assoc :events (if falseCircleEvent
@@ -156,11 +157,14 @@
         (check-for-circle-event arcLeft)
         (check-for-circle-event arcRight))))
 
+(defn handle-first-site-event [vor ev]
+  (-> vor
+      (update :arcs #(assoc % (arc/new-first-arc ev) nil))
+      (assoc :scan (:y ev))))
+
 (defn handle-site-event [vor ev]
   (if (= 0 (count (:arcs vor)))
-    (-> vor
-        (update :arcs #(assoc % (arc/new-first-arc ev) nil))
-        (assoc :scan (:y ev)))
+    (handle-first-site-event vor ev)
     (handle-later-site-event vor ev)))
 
 (defn handle-event [{events :events :as vor}]
@@ -184,3 +188,13 @@
 
 (defn reset-to [vor y]
   (scan-to (new-voronoi (:points vor)) y))
+
+(defn process-all-events [vor]
+  (loop [vor vor]
+    (if (empty? (:event vor))
+      vor
+      (recur (handle-event vor)))))
+
+(defn finish [vor]
+  (let [vor (process-all-events vor)]
+    vor))

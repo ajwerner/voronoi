@@ -6,7 +6,6 @@
             [clojure.string :as string]
             [reagent.core :as reagent]))
 
-
 (defn parabola-point-y [foc dir x]
   (let [a (:x foc)
         b (:y foc)
@@ -36,7 +35,8 @@
                   "M " xmin " " y1
                   " Q " cx " " cy " " xmax " " y2)
               :fill-opacity "0"
-              :stroke "black"}])))
+              :stroke "black"
+              :stroke-width 1}])))
 
 
 (defn draw-parabolas [arcs y xmin xmax]
@@ -57,20 +57,20 @@
      (doall
       (map-indexed
        (fn [i {x :x y :y :as p}]
-         ^{:key i} [:circle {:cx x :cy y :r .1 :stroke "black"}])
+         ^{:key i} [:circle {:cx x :cy y :r .4 :stroke-width .1 :stroke "black"}])
        @points-cursor))]))
 
 
 (defn line [x1 y1 x2 y2 attrs]
-  [:line (into attrs {:x1 x1 :y1 y1 :x2 x2 :y2 y2})])
+  [:line (into attrs {:x1 x1 :y1 y1 :x2 x2 :y2 y2 :stroke-width .8})])
 
 (defn draw-sweep-line [y xmin xmax]
-  [:g (line xmin y xmax y {:stroke "black"})])
+  [:g (line xmin y xmax y {:stroke "black"
+                           :stroke-width .1})])
 
 (defn get-completeds [completeds]
   ;;(println completeds)
   @completeds)
-
 
 (defn get-completed [completeds idx]
   (-> @(reagent/track get-completeds completeds) (nth idx)))
@@ -117,15 +117,14 @@
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
-  [voronoi]
+  [voronoi scroll]
   (let [points-cursor (reagent/cursor voronoi [:points])
         completed-cursor (reagent/cursor voronoi [:completed])
-        scroll (reagent/atom
-                {:x -80
-                 :y -200
-                 :x-width 1200
-                 :y-width 1800
-                 :prev nil})
+        scroll-cursor (swap! scroll #(if % % {:x -80
+                                              :y -200
+                                              :x-width 1200
+                                              :y-width 1800
+                                              :prev nil}))
         handle-tm (fn [{:keys [prev x y]
                         :as scroll} ev]
                     (let [t (aget (.-touches ev) 0)
