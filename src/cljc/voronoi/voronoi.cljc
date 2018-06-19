@@ -85,9 +85,10 @@
         ce-l (circle-event new-arc-left)
         new-arc-right (arc/new-arc bp (:right arc-right) y)
         ce-r (circle-event new-arc-right)
-        events (transient events)
-        events (if (some? ev-left) (disj! events ev-left) events)
-        events (if (some? ev-right) (disj! events ev-right) events)
+        events (if ev-left (disj events ev-left) events)
+        events (if ev-right (disj events ev-right) events)
+        events (if ce-l (conj events ce-l) events)
+        events (if ce-r (conj events ce-r) events)
         edges (conj edges new-h-e)
         arcs (transient arcs)
         arcs (if (some? arc-left) (dissoc! arcs arc-left) arcs)
@@ -96,7 +97,7 @@
         arcs (assoc! arcs new-arc-right ce-r)
         breaks (transient breaks)
         breaks (if-let [l (:left arc)] (disj! breaks l) breaks)
-        breaks (if-let [r (:right arcs)] (disj! breaks r) breaks)
+        breaks (if-let [r (:right arc)] (disj! breaks r) breaks)
         breaks (conj! breaks bp)
         completed (transient completed)
         completed (conj! completed
@@ -109,7 +110,7 @@
         ]
     (persistent! (-> (transient vor)
                      (assoc! :scan y)
-                     (assoc! :events (persistent! events))
+                     (assoc! :events events)
                      (assoc! :edges edges)
                      (assoc! :arcs (persistent! arcs))
                      (assoc! :breaks (persistent! breaks))
@@ -169,23 +170,24 @@
                     (arc/new-arc new-vert-bp bp-r y)
                     (arc/new-arc new-bp-r bp-r y))
         ce-r (circle-event arc-right)
-        ce-l (circle-event arc-left)]
+        ce-l (circle-event arc-left)
+        arcs (transient arcs)
+        arcs (dissoc! arcs arc-above)
+        arcs (assoc! arcs arc-left ce-l)
+        arcs (assoc! arcs arc-right ce-r)
+        arcs (if arc-center (assoc! arcs arc-center nil) arcs)
+        ]
     (-> vor
         (assoc :scan y)
-        (assoc :events (if false-circle
-                         (disj events false-circle)
-                         events)
+        (assoc :events (as-> events events
+                         (if false-circle (disj events false-circle) events)
+                         (if ce-r (conj events ce-r) events)
+                         (if ce-l (conj events ce-l) events))
                :edges (conj edges new-h-e)
                :breaks (if new-vertical
                          (conj breaks new-vert-bp)
                          (conj breaks new-bp-l new-bp-r))
-               :arcs (persistent!
-                      (as-> (transient arcs) arcs
-                        (dissoc! arcs arc-above)
-                        (assoc! arcs arc-left ce-l)
-                        (assoc! arcs arc-right ce-r)
-                        (if (some? arc-center)
-                          (assoc! arcs arc-center nil) arcs)))))))
+               :arcs (persistent! arcs)))))
 
 (defn handle-first-site-event [vor ev]
   (-> vor

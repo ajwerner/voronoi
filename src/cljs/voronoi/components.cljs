@@ -24,7 +24,7 @@
         [voronoi-svg vor scroll]]
        [control-panel db]
        [arc-table-and-toggle vor]
-       ;;[events-panel vor]
+      ;; [events-panel vor]
        ])))
 
 (defn animation-playground [db]

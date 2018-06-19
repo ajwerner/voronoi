@@ -7,6 +7,14 @@
 ;; Arc Table
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn point [p]
+  (str "("
+       (.toFixed (:x p) 2)
+       ","
+       (.toFixed (:y p) 2)
+       ")"))
+
+
 (defn arc-table
   "arc-table isn't that interesting.
   It creates a really ugly table of the wavefront.
@@ -25,13 +33,13 @@
         [:th "BreakRight"]]]
       [:tbody
        (let [{:keys [arcs scan]} @vor]
-         (for [arc (keys arcs)]
+         (for [[arc _] arcs]
            (let [[l r] (arc/arc-points arc scan)
                  len (distance l r)]
              ^{:key arc}
              [:tr
-              [:td (str l) ]
-              [:td (str r) ]
+              [:td [point l] ]
+              [:td [point r] ]
               [:td (str len)]
               [:td (str (:point arc))]
               [:td (str "(" (:left (:left arc)) ", " (:right (:left arc)) ")") ]
