@@ -41,7 +41,7 @@
 
 (defn draw-parabolas [arcs y xmin xmax]
   (if (> (count arcs) 0)
-    (let [parabolas (for [arc (keys arcs)]
+    (let [parabolas (for [[arc _] arcs]
                       (let [arc-l (arc/left-bound arc y)
                             arc-r (arc/right-bound arc y)
                             xmin (min (max (:x arc-l) xmin) xmax)
@@ -125,27 +125,29 @@
                                               :x-width 1200
                                               :y-width 1800
                                               :prev nil}))
-        handle-tm (fn [{:keys [prev x y]
+        handle-tm (fn [{:keys [prev x y x-width y-width]
                         :as scroll} ev]
                     (let [t (aget (.-touches ev) 0)
                           scroll (assoc scroll :prev t)
-                          shift (.-shiftKey ev)
-                          ]
-
+                          shift (.-shiftKey ev)]
                       (if prev
-                        (let [xdelta (- (.-screenX t)
-                                        (.-screenX prev))
-                              ydelta (- (.-screenY t)
-                                        (.-screenY prev))]
+                        (let [xdelta (* (- (.-screenX t)
+                                           (.-screenX prev))
+                                        (/ x-width 1200))
+                              ydelta (* (- (.-screenY t)
+                                           (.-screenY prev))
+                                        (/ y-width 1800))]
+                          (println (/ x-width 1200))
+
                           (if shift
                             (let [size nil]
                               (-> scroll
                                   (update :x-width #(max (- % xdelta) 0))
-                                  ;; (update :y-width - ydelta)
+                                  (update :y-width #(max (- % ydelta) 0))
                                   ))
                             (-> scroll
-                                (update :x - xdelta)
-                                (update :y - ydelta))))
+                                (update :x - (/ xdelta 1))
+                                (update :y - (/ ydelta 1)))))
                         scroll)))
         tm (fn [ev]
 
@@ -161,7 +163,7 @@
                :on-touch-end clear
                :on-touch-cancel clear}
          [:svg {:viewBox view-box
-                :preserveAspectRatio "xMaxYMax meet"}
+                :preserveAspectRatio "xMaxYMax slice"}
 
           [draw-points points-cursor]
           [draw-completeds completed-cursor]

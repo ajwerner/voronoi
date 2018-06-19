@@ -1,5 +1,6 @@
 (ns voronoi.voronoi
   (:require [clojure.string :as str]
+            [clojure.data.avl :as avl]
             [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close]]
             [voronoi.point :as point]
             [voronoi.arc :as arc]
@@ -15,48 +16,56 @@
           processed (if-not exists (processed cur) processed)]
       (recur (rest to-process) processed))))
 
-(defrecord VoronoiBuilder
-    [input points scan events edges complete breaks arcs ])
 
 (defn new-voronoi [input]
   "Returns a map representing a voronoi builder"
   (let [points (map point/map->Point input)
         events (into (sorted-set-by event/event-comparator) points)
         scan (:y (first events))]
-    (map->VoronoiBuilder {:input input
-                          :points points
-                          :scan scan
-                          :events events
-                          :edges []
-                          :completed []
-                          :breaks #{}
-                          :arcs (sorted-map-by arc/arc-comparator)})))
+    {:input input
+     :points points
+     :scan scan
+     :events events
+     :edges []
+     :completed []
+     :breaks #{}
+     :arcs (avl/sorted-map-by arc/arc-comparator)}))
 
-(defn check-for-circle-event [vor arc]
+
+
+(defn circle-event [arc]
   (if-let [center (arc/check-circle arc)]
     (let [rad (point/distance (:point arc) center)
           x (:x center)
           y (+ (:y center) rad)
           ev (event/->CircleEvent x y center arc)]
-      (-> vor
-          (update :events conj ev)
-          (update :arcs assoc arc ev)))
-    (update vor :arcs assoc arc nil)))
+      ev)
+    nil))
 
 (defn handle-circle-event [{arcs :arcs
+                            edges :edges
+                            events :events
+                            breaks :breaks
+                            completed :completed
                             :as vor}
                            {y :y
                             arc :arc
                             :as ev}]
-  (let [
-        arc-left-entry (if-let [s (rsubseq arcs < arc)] (first s))
-        arc-left (key arc-left-entry)
-        arc-right-entry (if (some? arc-left)
-                          (second (subseq arcs > arc-left))
-                          (second arcs))
-        arc-right (key arc-right-entry)
-        ev-left (val arc-left-entry)
-        ev-right (val arc-right-entry)
+  (let [r (avl/rank-of arcs arc)
+        [arc-left ev-left] (if (> r 0)
+                             (nth arcs (- r 1))
+                             [nil nil])
+        [arc-right ev-right] (if (< r (count arcs))
+                               (nth arcs (+ r 1))
+                               [nil nil])
+        ;; arc-left-entry (if-let [s (rsubseq arcs < arc)] (first s))
+        ;; arc-left (first arc-left-entry)
+        ;; arc-right-entry (if (some? arc-left)
+        ;;                   (second (subseq arcs > arc-left))
+        ;;                   (second arcs))
+        ;; arc-right (first arc-right-entry)
+        ;; ev-left (second arc-left-entry)
+        ;; ev-right (second arc-right-entry)
         new-h-e (edge/new-half-edge (:left (:left arc))
                                     (:right (:right arc)))
         turns-left (== 1 (point/ccw (:begin (:right arc-left))
@@ -72,24 +81,39 @@
         bp (bp/new-break-point (:left (:left arc))
                                (:right (:right arc))
                                new-h-e side y)
+        new-arc-left (arc/new-arc (:left arc-left) bp y)
+        ce-l (circle-event new-arc-left)
         new-arc-right (arc/new-arc bp (:right arc-right) y)
-        new-arc-left (arc/new-arc (:left arc-left) bp y)]
-    (-> vor
-        (assoc :scan y)
-        (update :events #(apply disj % (remove nil? [ev-left ev-right])))
-        (update :edges conj new-h-e)
-        (update :arcs dissoc arc arc-left arc-right)
-        (update :breaks disj (:left arc) (:right arc))
-        (update :breaks conj bp)
-        (update :completed conj
-                {:end (:vert ev)
-                 :begin (:begin (:left arc))
-                 :edge (:edge (:left arc))}
-                {:end (:vert ev)
-                 :begin (:begin (:right arc))
-                 :edge (:edge (:right arc))})
-        (check-for-circle-event new-arc-left)
-        (check-for-circle-event new-arc-right))))
+        ce-r (circle-event new-arc-right)
+        events (transient events)
+        events (if (some? ev-left) (disj! events ev-left) events)
+        events (if (some? ev-right) (disj! events ev-right) events)
+        edges (conj edges new-h-e)
+        arcs (transient arcs)
+        arcs (if (some? arc-left) (dissoc! arcs arc-left) arcs)
+        arcs (if (some? arc-right) (dissoc! arcs arc-right) arcs)
+        arcs (assoc! arcs new-arc-left ce-l)
+        arcs (assoc! arcs new-arc-right ce-r)
+        breaks (transient breaks)
+        breaks (if-let [l (:left arc)] (disj! breaks l) breaks)
+        breaks (if-let [r (:right arcs)] (disj! breaks r) breaks)
+        breaks (conj! breaks bp)
+        completed (transient completed)
+        completed (conj! completed
+                         {:end (:vert ev)
+                          :begin (:begin (:left arc))
+                          :edge (:edge (:left arc))}
+                         {:end (:vert ev)
+                          :begin (:begin (:right arc))
+                          :edge (:edge (:right arc))})
+        ]
+    (persistent! (-> (transient vor)
+                     (assoc! :scan y)
+                     (assoc! :events (persistent! events))
+                     (assoc! :edges edges)
+                     (assoc! :arcs (persistent! arcs))
+                     (assoc! :breaks (persistent! breaks))
+                     (assoc! :completed (persistent! completed))))))
 
 (defn handle-later-site-event
   "Used after the first site event where things are weird."
@@ -100,13 +124,17 @@
     events :events
     :as vor}
    {x :x y :y :as ev}]
-  (let [step1 (rsubseq arcs < (assoc ev :query true))
-        step2 (if (not-empty step1)
-                (first (subseq arcs > (key (first step1))))
-                (first arcs))
-        arc-above-entry step2
-        arc-above (if (some? arc-above-entry) (key arc-above-entry))
-        false-circle-event (if (some? arc-above-entry) (val arc-above-entry))
+  (let [[l _] (avl/nearest arcs < (assoc ev :query true))
+        [arc-above false-circle]  (if (some? l)
+                                    (avl/nearest arcs > l)
+                                    (first arcs))
+        ;; step1 (rsubseq arcs < (assoc ev :query true))
+        ;; step2 (if (not-empty step1)
+        ;;         (first (subseq arcs > (first (first step1))))
+        ;;         (first arcs))
+        ;; arc-above-entry step2
+        ;; arc-above (if (some? arc-above-entry) (first arc-above-entry))
+        ;; false-circle-event (if (some? arc-above-entry) (second arc-above-entry))
         new-h-e (edge/new-half-edge (:point arc-above) ev)
         bp-l (:left arc-above)
         bp-r (:right arc-above)
@@ -139,22 +167,25 @@
                      (arc/new-arc new-bp-l new-bp-r y))
         arc-right (if new-vertical
                     (arc/new-arc new-vert-bp bp-r y)
-                    (arc/new-arc new-bp-r bp-r y))]
+                    (arc/new-arc new-bp-r bp-r y))
+        ce-r (circle-event arc-right)
+        ce-l (circle-event arc-left)]
     (-> vor
         (assoc :scan y)
-        (assoc :events (if false-circle-event
-                         (disj events false-circle-event)
+        (assoc :events (if false-circle
+                         (disj events false-circle)
                          events)
                :edges (conj edges new-h-e)
                :breaks (if new-vertical
                          (conj breaks new-vert-bp)
                          (conj breaks new-bp-l new-bp-r))
-               :arcs (as-> arcs arcs
-                       (dissoc arcs arc-above)
-                       (if (some? arc-center)
-                         (assoc arcs arc-center nil) arcs)))
-        (check-for-circle-event arc-left)
-        (check-for-circle-event arc-right))))
+               :arcs (persistent!
+                      (as-> (transient arcs) arcs
+                        (dissoc! arcs arc-above)
+                        (assoc! arcs arc-left ce-l)
+                        (assoc! arcs arc-right ce-r)
+                        (if (some? arc-center)
+                          (assoc! arcs arc-center nil) arcs)))))))
 
 (defn handle-first-site-event [vor ev]
   (-> vor

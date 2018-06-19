@@ -1,14 +1,14 @@
 (ns voronoi.util)
 
-(def PI
+(defonce PI
   #?(:clj java.lang.Math/PI
      :cljs js/Math.PI))
 
-(def Infinity
+(defonce Infinity
   #?(:clj java.lang.Double/POSITIVE_INFINITY
      :cljs js/Number.POSITIVE_INFINITY))
 
-(def -Infinity
+(defonce -Infinity
   #?(:clj java.lang.Double/NEGATIVE_INFINITY
      :cljs js/Number.NEGATIVE_INFINITY))
 
@@ -20,11 +20,11 @@
   #?(:clj (java.lang.Math/sqrt v)
      :cljs (.sqrt js/Math v)))
 
-(defn sin [^double v]
+(defn sin [v]
      #?(:clj (java.lang.Math/sin v)
         :cljs (js/Math.sin v)))
 
-(defn cos [^double v]
+(defn cos [v]
      #?(:clj (java.lang.Math/cos v)
         :cljs (js/Math.cos v)))
 
@@ -42,7 +42,6 @@
 
 (defn within-epsilon [a b epsilon]
   (< (abs (- a b)) epsilon))
-
 
 (def epsilon 1e-8)
 
