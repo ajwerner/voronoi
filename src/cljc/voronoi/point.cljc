@@ -4,34 +4,37 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrecord Point [x y])
 
-(defn midpoint [^Point a ^Point b]
+(defn midpoint [a b]
   (let [x (/ (+ (:x a) (:x b)) 2)
         y (/ (+ (:y a) (:y b)) 2)]
     (->Point x y)))
 
-(defn length [^Point p]
+(defn length [p]
   (u/sqrt (+ (u/sq (:x p)) (u/sq (:y p)))))
 
-(defn area2 [^Point a  ^Point b  ^Point c]
+(defn area2 [a b c]
   (- (* (- (:x b) (:x a))
         (- (:y c) (:y a)))
      (* (- (:y b) (:y a))
         (- (:x c) (:x a)))))
 
-(defn ccw [^Point a  ^Point b  ^Point c]
+(defn ccw [a b c]
   (let [a (area2 a b c)]
     (cond
       (< a 0) -1
       (> a 0) 1
       :else   0)))
 
-(defn distance [^Point a ^Point b]
-  (u/sqrt (+ (u/sq (- (:x a) (:x b)))
-             (u/sq (- (:y a) (:y b))))))
+(defn distance [a b]
+  (let [[{x1 :x y1 :y} {x2 :x y2 :y}] [a b]
+        dist (u/sqrt (+ (u/sq (- x1 x2))
+                        (u/sq (- y1 y2))))]
+    dist))
 
-(defn x-ordered-comparator [^Point a ^Point b]
+(defn x-ordered-comparator [a b]
   (let [c (compare (:x a) (:x b))]
     (if (not= c 0)
       c

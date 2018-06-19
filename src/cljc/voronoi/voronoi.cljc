@@ -32,7 +32,7 @@
                           :breaks #{}
                           :arcs (sorted-map-by arc/arc-comparator)})))
 
-(defn check-for-circle-event [^VoronoiBuilder vor arc]
+(defn check-for-circle-event [vor arc]
   (if-let [center (arc/check-circle arc)]
     (let [rad (point/distance (:point arc) center)
           x (:x center)

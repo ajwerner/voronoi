@@ -36,7 +36,7 @@
 (defn new-first-arc [point]
   (->Arc point nil nil (:y point)))
 
-(defn new-arc [left right ^double y]
+(defn new-arc [left right y]
   (let [point (if-not (nil? left)
                 (:right left)
                 (:left right))]
