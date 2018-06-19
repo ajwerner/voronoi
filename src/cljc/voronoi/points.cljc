@@ -1,4 +1,5 @@
-(ns voronoi.points)
+(ns voronoi.points
+  (:require [voronoi.util :refer [PI cos sin random]]))
 
 (def canvas-size [700 700])
 
@@ -21,18 +22,18 @@
     (points-lists-to-points points-lists)))
 
 (defn circle-points [n rad cx cy]
-  (let [step-size (/ (* 2 js/Math.PI) n)
+  (let [step-size (/ (* 2 PI) n)
         points (for [r (map #(* step-size %) (range n))]
-                 [(+ cx (* rad (js/Math.cos r)))
-                  (+ cy (* rad (js/Math.sin r)))])]
+                 [(+ cx (* rad (cos r)))
+                  (+ cy (* rad (sin r)))])]
     (points-lists-to-points points)))
 
 
 (defn random-points [n]
   (let [[maxx maxy] canvas-size
         points-lists (for [_ (range n)]
-                       [(* (js/Math.random) maxx)
-                        (* (js/Math.random) maxy)])]
+                       [(* (random) maxx)
+                        (* (random) maxy)])]
     (points-lists-to-points points-lists)))
 
 (defn zoom-by [points factor]

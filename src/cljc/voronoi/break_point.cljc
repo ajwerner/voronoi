@@ -41,8 +41,6 @@
                     (/ (* 2 C) num)
                     (/ num (* 2 A)))))
             y (+ (* m x) b)]
-        (if (isNaN? y)
-          (println "hi " p sweep-y))
         (->Point x y)))))
 
 (defn new-break-point [left right edge side y]

@@ -1,11 +1,12 @@
 (ns voronoi.arc
   (:require [voronoi.util :refer [Infinity -Infinity close]]
-            [voronoi.point :refer [->Point map->Point
-                                   y-ordered-epsilon-comparator
-                                   x-ordered-comparator
-                                   ccw midpoint]]
+            [voronoi.point :as point
+             :refer [->Point map->Point
+                     y-ordered-epsilon-comparator
+                     x-ordered-comparator
+                     ccw midpoint]]
             [voronoi.edge :refer [intersect-edges]]
-            [voronoi.break-point :refer [break-point-point]]))
+            [voronoi.break-point :as bp :refer [ break-point-point]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Arcs
@@ -35,7 +36,7 @@
 (defn new-first-arc [point]
   (->Arc point nil nil (:y point)))
 
-(defn new-arc [left right y]
+(defn new-arc [left right ^double y]
   (let [point (if-not (nil? left)
                 (:right left)
                 (:left right))]

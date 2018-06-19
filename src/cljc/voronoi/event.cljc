@@ -20,9 +20,6 @@
       c
       (let [aCircle (is-circle a)
             bCircle (is-circle b)
-            aCcw (point/ccw a (:vert a) (:point (:arc a)))
-            bCcw (point/ccw b (:vert b) (:point (:arc b)))
-            oCcw (point/ccw (:point (:arc a)) (:vert a) (:point (:arc b)))
             cx (compare (:x a) (:x b))
             breaker (cond
                       (not (or aCircle bCircle)) cx

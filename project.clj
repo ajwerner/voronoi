@@ -16,6 +16,7 @@
                  [org.clojure/clojurescript "1.10.238"
                   :scope "provided"]
                  [secretary "1.2.3"]
+                 [criterium "0.4.4"]
                  [venantius/accountant "0.2.4"
                   :exclusions [org.clojure/tools.reader]]]
 
@@ -36,6 +37,7 @@
    [:cljsbuild :builds :app :compiler :output-to]]
 
   :source-paths ["src/clj" "src/cljc"]
+  :test-paths ["test/clj" "test/cljc"]
   :resource-paths ["resources" "target/cljsbuild"]
 
   :minify-assets
@@ -78,10 +80,10 @@
   {:http-server-root "public"
    :server-port 3449
    :nrepl-port 7002
-   :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"
-                      ]
+   :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
    :css-dirs ["resources/public/css"]
-   :ring-handler voronoi.handler/app}
+   :ring-handler voronoi.handler/app
+   :repl-eval-timeout 100000}
 
 
   :profiles {:dev {:repl-options {:init-ns voronoi.repl
