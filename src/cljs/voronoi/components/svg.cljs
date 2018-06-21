@@ -78,20 +78,36 @@
 (defn get-completed-count [completeds]
   (-> @(reagent/track get-completeds completeds) count))
 
-(defn completed-comp [completeds i]
-  (let [t (reagent/track get-completed completeds i)]
-    (fn []
-      (let [{{bx :x by :y} :begin
-             {ex :x ey :y} :end
-             :as completed} @t
-            ok (not-any? infy? [bx by ex ey])]
-        (if ok
-          [line bx by ex ey {:stroke "blue"}])))))
+;; (defn completed-comp [completeds i]
+;;   (let [ts (reagent/track get-completed completeds i)]
+;;     (let [{{bx :x by :y} :begin
+;;            {ex :x ey :y} :end
+;;            :as completed} @t
+;;           ok (not-any? infy? [bx by ex ey])
+;;           ]
+;;       (if ok
+;;         [line bx by ex ey {:stroke "blue"}]))))
 
-(defn draw-completeds [completeds]
-  (let [c @(reagent/track get-completed-count completeds)]
-    [:g (for [i (range c)]
-          ^{:key i} [completed-comp completeds i])]))
+(defn draw-complete-half-edges [complete-cursor]
+  (let []
+    (fn []
+
+      (let [complete @complete-cursor
+            c [:g
+               (doall
+                (map-indexed
+
+                 (fn [i c]
+                   (let [{{bx :x by :y} :begin
+                          {ex :x ey :y} :end} c
+                         ok (not-any? infy? [bx by ex ey])]
+                     (if ok
+                       ^{:key i} [line bx by ex ey {:stroke "blue"}])))
+                 complete))]]
+
+        c))))
+
+;; ^{:key i} [completed-comp completeds i]
 
 (defn draw-break [bp y]
   (let [{bx :x by :y} (:begin bp)
@@ -119,7 +135,7 @@
   expects a ratom for a voronoi diagram"
   [voronoi scroll]
   (let [points-cursor (reagent/cursor voronoi [:points])
-        completed-cursor (reagent/cursor voronoi [:completed])
+        complete-cursor (reagent/cursor voronoi [:completed])
         scroll-cursor (swap! scroll #(if % % {:x -80
                                               :y -200
                                               :x-width 1200
@@ -137,8 +153,6 @@
                               ydelta (* (- (.-screenY t)
                                            (.-screenY prev))
                                         (/ y-width 1800))]
-                          (println (/ x-width 1200))
-
                           (if shift
                             (let [size nil]
                               (-> scroll
@@ -166,5 +180,5 @@
                 :preserveAspectRatio "xMaxYMax slice"}
 
           [draw-points points-cursor]
-          [draw-completeds completed-cursor]
+          [draw-complete-half-edges complete-cursor]
           [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))

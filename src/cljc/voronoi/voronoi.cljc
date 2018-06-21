@@ -254,6 +254,7 @@
         arcs (assoc! arcs arc-right ce-r)
         arcs (if arc-center (assoc! arcs arc-center nil) arcs)
         arcs (persistent! arcs)
+
         ]
     (-> vor
         (assoc! :scan y)
@@ -264,7 +265,9 @@
                 :edges (conj! edges new-h-e)
                 :breaks (if new-vertical
                           (conj! breaks new-vert-bp)
-                          (conj! breaks new-bp-l new-bp-r))
+                          (-> breaks
+                              (conj! new-bp-l)
+                              (conj! new-bp-r)))
                 :arcs arcs))))
 
 (defn handle-first-site-event! [vor ev]
