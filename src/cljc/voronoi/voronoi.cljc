@@ -16,7 +16,6 @@
           processed (if-not exists (processed cur) processed)]
       (recur (rest to-process) processed))))
 
-
 (defn new-voronoi [input]
   "Returns a map representing a voronoi builder"
   (let [points (map point/map->Point input)
@@ -31,8 +30,19 @@
      :breaks #{}
      :arcs (avl/sorted-map-by arc/arc-comparator)}))
 
+(defn check-circle [arc]
+  (let [l (:left arc)
+        r (:right arc)
+        haveNil (or (nil? l) (nil? r))
+        ccwv (if-not haveNil
+               (point/ccw (:left l) (:point arc) (:right r)))]
+    (cond
+      haveNil nil
+      (not (= 1 ccwv)) nil
+      :else (edge/intersect-edges (:edge l) (:edge r)))))
+
 (defn circle-event [arc]
-  (if-let [center (arc/check-circle arc)]
+  (if-let [center (check-circle arc)]
     (let [rad (point/distance (:point arc) center)
           x (:x center)
           y (+ (:y center) rad)
@@ -40,78 +50,8 @@
       ev)
     nil))
 
-;; (defn handle-circle-event [{arcs :arcs
-;;                             :as vor}
-;;                            {y :y
-;;                             arc :arc
-;;                             :as ev}]
-;;   (let [r (avl/rank-of arcs arc)
-;;         [arc-left ev-left] (if (> r 0)
-;;                              (nth arcs (- r 1))
-;;                              [nil nil])
-;;         [arc-right ev-right] (if (< r (count arcs))
-;;                                (nth arcs (+ r 1))
-;;                                [nil nil])
-;;         ;; arc-left-entry (if-let [s (rsubseq arcs < arc)] (first s))
-;;         ;; arc-left (first arc-left-entry)
-;;         ;; arc-right-entry (if (some? arc-left)
-;;         ;;                   (second (subseq arcs > arc-left))
-;;         ;;                   (second arcs))
-;;         ;; arc-right (first arc-right-entry)
-;;         ;; ev-left (second arc-left-entry)
-;;         ;; ev-right (second arc-right-entry)
-;;         new-h-e (edge/new-half-edge (:left (:left arc))
-;;                                     (:right (:right arc)))
-;;         turns-left (== 1 (point/ccw (:begin (:right arc-left))
-;;                                    ev
-;;                                    (:begin (:left arc-right))))
-;;         is-left-point (if turns-left
-;;                       (< (:m new-h-e) 0)
-;;                       (> (:m new-h-e) 0))
-;;         new-h-e (if is-left-point
-;;                   (assoc new-h-e :p1 (:vert ev))
-;;                   (assoc new-h-e :p2 (:vert ev)))
-;;         side (if (not is-left-point) :left :right)
-;;         bp (bp/new-break-point (:left (:left arc))
-;;                                (:right (:right arc))
-;;                                new-h-e side y)
-;;         new-arc-right (arc/new-arc bp (:right arc-right) y)
-;;         new-arc-left (arc/new-arc (:left arc-left) bp y)]
-;;     (-> vor
-;;         (assoc :scan y)
-;;         (update :events #(apply disj % (remove nil? [ev-left ev-right])))
-;;         (update :edges conj new-h-e)
-;;         (update :arcs dissoc arc arc-left arc-right)
-;;         (update :breaks disj (:left arc) (:right arc))
-;;         (update :breaks conj bp)
-;;         (update :completed conj
-;;                 {:end (:vert ev)
-;;                  :begin (:begin (:left arc))
-;;                  :edge (:edge (:left arc))}
-;;                 {:end (:vert ev)
-;;                  :begin (:begin (:right arc))
-;;                  :edge (:edge (:right arc))})
-;;         (check-for-circle-event new-arc-left)
-;;         (check-for-circle-event new-arc-right))))
-
-(def ^:private transient-keys [:arcs :edges :breaks :completed])
-
-;; (defn make-persistent [vor]
-;;   (-> vor
-;;       ((apply comp (map #(fn [] (assoc! % (persistent! (% vor))))
-;;                         transient-keys)))
-;;       (persistent!)))
-
-;; (defn make-transient [vor]
-;;   (-> vor
-;;       (transient)
-;;       ((apply comp (map #(fn [] (assoc! % (transient (% vor))))
-;;                         transient-keys)))))
-
 (defn make-persistent! [{:keys [arcs events breaks completed edges] :as vor}]
   (-> vor
-      ;; (assoc! :arcs (persistent! arcs))
-      ;; do events
       (assoc! :breaks (persistent! breaks))
       (assoc! :completed (persistent! completed))
       (assoc! :edges (persistent! edges))
@@ -120,8 +60,6 @@
 (defn make-transient [{:keys [arcs events breaks completed edges] :as vor}]
   (-> vor
       (transient)
-      ;; (assoc! :arcs (transient arcs))
-      ;; do events
       (assoc! :breaks (transient breaks))
       (assoc! :completed (transient completed))
       (assoc! :edges (transient edges))))
@@ -142,14 +80,6 @@
         [arc-right ev-right] (if (< r (count arcs))
                                (nth arcs (+ r 1))
                                [nil nil])
-        ;; arc-left-entry (if-let [s (rsubseq arcs < arc)] (first s))
-        ;; arc-left (first arc-left-entry)
-        ;; arc-right-entry (if (some? arc-left)
-        ;;                   (second (subseq arcs > arc-left))
-        ;;                   (second arcs))
-        ;; arc-right (first arc-right-entry)
-        ;; ev-left (second arc-left-entry)
-        ;; ev-right (second arc-right-entry)
         new-h-e (edge/new-half-edge (:left (:left arc))
                                     (:right (:right arc)))
         turns-left (== 1 (point/ccw (:begin (:right arc-left))
@@ -210,7 +140,8 @@
     :as vor}
    {x :x y :y :as ev}]
   (let [[l _] (avl/nearest arcs < (assoc ev :query true))
-        [arc-above false-circle]  (if (some? l)
+        [arc-above false-circle]  (if (and (> (count arcs) 1)
+                                           (some? l))
                                     (avl/nearest arcs > l)
                                     (first arcs))
         new-h-e (edge/new-half-edge (:point arc-above) ev)
@@ -262,13 +193,17 @@
                           (if false-circle (disj evs false-circle) evs)
                           (if ce-r (conj evs ce-r) evs)
                           (if ce-l (conj evs ce-l) evs))
-                :edges (conj! edges new-h-e)
-                :breaks (if new-vertical
-                          (conj! breaks new-vert-bp)
-                          (-> breaks
-                              (conj! new-bp-l)
-                              (conj! new-bp-r)))
-                :arcs arcs))))
+
+
+
+                )
+        (assoc! :arcs arcs)
+        (assoc! :edges (conj! edges new-h-e))
+        (assoc! :breaks (if new-vertical
+                   (conj! breaks new-vert-bp)
+                   (-> breaks
+                       (conj! new-bp-l)
+                       (conj! new-bp-r)))))))
 
 (defn handle-first-site-event! [vor ev]
   (let [arcs (assoc (:arcs vor) (arc/new-first-arc ev) nil)]
@@ -297,23 +232,25 @@
           (make-persistent!))
       vor)))
 
-(defn scan-to [vor to]
-  (loop [{events :events :as cur} vor]
-    (let [ev (first events)
-          have-event (and (some? ev)
-                          (>= to (:y ev)))]
-      (if-not have-event
-        (assoc cur :scan to)
-        (recur (handle-event cur))))))
+ (defn scan-to [vor to]
+  (make-persistent!
+   (loop [{events :events :as cur} (make-transient vor)]
+     (let [ev (first events)
+           have-event (and (some? ev)
+                           (>= to (:y ev)))]
+       (if-not have-event
+         (assoc! cur :scan to)
+         (recur (handle-event! cur ev)))))))
 
 (defn reset-to [vor y]
   (scan-to (new-voronoi (:points vor)) y))
 
 (defn process-all-events [vor]
-  (loop [vor vor]
-    (if (empty? (:events vor))
-      vor
-      (recur (handle-event vor)))))
+  (make-persistent!
+   (loop [{events :events :as vor} (make-transient vor)]
+     (if-let [ev (first events)]
+       (recur (handle-event! vor ev))
+       vor))))
 
 (defn finish [vor]
   (let [vor (process-all-events vor)]

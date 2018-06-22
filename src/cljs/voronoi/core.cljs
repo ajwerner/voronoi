@@ -3,17 +3,24 @@
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
             [voronoi.voronoi :as vor]
-            [voronoi.components :refer [intro animation-playground]]
+            [voronoi.components :refer [intro animation-playground misc]]
             [voronoi.control :refer [reset-state!]]
             [voronoi.points :as p]))
 
 ;; -------------------------
 ;; State
 
-(defonce  app-state (atom {:animation-page nil}))
+(defonce app-state (atom {:animation-page nil
+                          :misc nil}))
 (defonce animation-playground-page
   #(animation-playground
     (reagent/cursor app-state [:animation-page])))
+
+(defonce misc-page
+  #(misc
+    (reagent/cursor app-state [:misc])))
+
+(secretary/set-config! :prefix "#")
 
 ;; -------------------------
 ;; Views
@@ -26,13 +33,13 @@
 (defn current-page []
   [:div [@page]])
 
-(secretary/defroute "/" []
+(secretary/defroute #"/(intro)?" []
   (reset! page #'intro))
 
-(secretary/defroute "/#intro" []
-  (reset! page #'intro))
+(secretary/defroute "/misc" []
+  (reset! page #'misc-page))
 
-(secretary/defroute "/#animation-playground" []
+(secretary/defroute "/animation-playground" []
   (reset! page #'animation-playground-page))
 
 ;; -------------------------

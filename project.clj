@@ -14,7 +14,7 @@
                  [compojure "1.6.1"]
                  [hiccup "1.0.5"]
                  [yogthos/config "1.1.1"]
-                 [org.clojure/clojurescript "1.10.238"
+                 [org.clojure/clojurescript "1.10.312"
                   :scope "provided"]
                  [secretary "1.2.3"]
                  [criterium "0.4.4"]
@@ -46,7 +46,13 @@
    {"resources/public/css/site.min.css" "resources/public/css/site.css"}}
 
   :cljsbuild
-  {:builds {:min
+  {:builds {:test
+            {
+             :source-paths ["src/cljs" "src/cljc" "test/cljc" "test/cljs"]
+             :compiler {:output-to "resources/public/js/testable.js"
+                        :main voronoi.runner
+                        :optimizations :advanced}}
+            :min
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
              :compiler
              {:main             "voronoi.core"
@@ -63,7 +69,16 @@
               :output-dir       "docs/js"
               :source-map       "docs/js/app.js.map"
               :optimizations :advanced
-              :pretty-print  false}}
+              :pretty-print true
+              :pseudo-names true
+              :verbose true
+              :closure-warnings
+
+              {:check-types :warning ;; << ADD THIS
+               :check-variables :warning
+               :undefined-names :off
+               :externs-validation :off
+               :missing-properties :off}}}
             :app
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :figwheel {:on-jsload "voronoi.core/mount-root"}
@@ -100,7 +115,8 @@
                                   [pjstadig/humane-test-output "0.8.3"] ]
 
                    :source-paths ["env/dev/clj"]
-                   :plugins [[lein-figwheel "0.5.16"]]
+                   :plugins [[lein-figwheel "0.5.16"]
+                             [lein-doo "0.1.10"]]
                    :injections [(require 'pjstadig.humane-test-output)
                                 (pjstadig.humane-test-output/activate!)]
 

@@ -13,6 +13,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defprotocol ArcComparable
+  (left-x [this sweep-y])
+  (left-y [this sweep-y x])
+  (right-x [this sweep-y])
+  (right-y [this sweep-y x])
   (left-bound [this sweep-y])
   (right-bound [this sweep-y]))
 
@@ -22,8 +26,26 @@
 (def nil-right-bound-point
   (->Point Infinity -Infinity))
 
+;; TODO revisit the nil points based on the slope of the line
+
 (defrecord Arc [point left right added-at]
   ArcComparable
+  (left-x [this sweep-y]
+    (if (nil? left)
+      -Infinity
+      (bp/point-x (:pp left) sweep-y)))
+  (right-x [this sweep-y]
+    (if (nil? right)
+      Infinity
+      (bp/point-x (:pp right) sweep-y)))
+  (left-y [this sweep-y x]
+    (if (nil? left)
+      -Infinity
+      (bp/point-y (:pp left) sweep-y x)))
+  (right-y [this sweep-y x]
+    (if (nil? right)
+      -Infinity
+      (bp/point-y (:pp right) sweep-y x)))
   (left-bound [this sweep-y]
     (if (nil? left)
       nil-left-bound-point
@@ -42,62 +64,48 @@
                 (:left right))]
     (->Arc point left right y)))
 
-(defn left-point [arc sweep-y]
-  (if (nil? (:left arc))
-    (->Point -Infinity -Infinity)
-    (break-point-point (:left arc) sweep-y)))
-
-(defn arc-right-point [arc sweep-y]
-  (if (nil? (:right arc))
-    (->Point Infinity -Infinity)
-    (break-point-point (:right arc) sweep-y)))
-
 (defn arc-points [arc sweep-y]
   [(left-bound arc sweep-y)
    (right-bound arc sweep-y)])
 
-(defn check-circle [arc]
-  (let [l (:left arc)
-        r (:right arc)
-        haveNil (or (nil? l) (nil? r))
-        ccwv (if-not haveNil
-               (ccw (:left l) (:point arc) (:right r)))]
-    (cond
-      haveNil nil
-      (not (= 1 ccwv)) nil
-      :else (intersect-edges (:edge l) (:edge r)))))
+(defn q-larger
+  "
+  @param {!voronoi.point.Point} q
+  @param {!Arc} nq
+  @param {!number} y
+  @return {!boolean}
+  "
+  [q nq y]
+  (let [nqlx (left-x nq y)
+        qx (:x q)
+        ret (and (< nqlx qx)
+                 (not (close nqlx qx))
+                 (let [nqrx (right-x nq y)]
+                   (or
+                    (< nqrx qx)
+                    (close nqrx qx))))]
+    ret))
 
-
-(defn arc-comp-points [arc y]
-  (if (:query arc)
-    [arc arc]
-    (arc-points arc y)))
-
-(defn q-less [ql qr nql nqr]
-  (and (< (:x nql) (:x ql))
-       (or
-        (< (:x nqr) (:x qr))
-        (close (:x nqr) (:x ql)))
-       (not (close (:x nql) (:x ql)))))
-
-(defn arc-comparator [a b]
-  (if (= a b) 0
-      (let [aq (:query a)
-            bq (:query b)
-            isQuery (or aq bq)
-            y (if isQuery
-                (if aq (:y a) (:y b))
-                (max (:added-at a) (:added-at b)))
-            al (if aq a (left-bound a y))
-            ar (if aq a (right-bound a y))
-            bl (if bq b (left-bound b y))
-            br (if bq b (right-bound b y))
+(defn arcs-comparator
+  "
+  @param {!Arc} a
+  @param {!Arc} b
+  @return {!number}
+  "
+  [a b y]
+  (let [alx (left-x a y)
+        blx (left-x b y)
+        l-close (close alx blx)]
+    (if-not l-close
+      (if (< alx blx) -1 1)
+      (let [arx (right-x a y)
+            brx (right-x b y)
+            r-close (close arx brx)
             res (cond
-                  aq (if (q-less al ar bl br) 1 -1)
-                  bq (if (q-less bl br al ar) -1 1)
-                  (and (close (:x al) (:x bl))
-                       (close (:x ar) (:x br)))
-                  (let [aCcw (ccw (update al :y + 1000) al (:point a))
+                  (and l-close r-close)
+                  (let [al (left-bound a y)
+                        bl (left-bound b y)
+                        aCcw (ccw (update al :y + 1000) al (:point a))
                         bCcw (ccw (update bl :y + 1000) bl (:point  b))
                         oCcw (ccw (:point a) al (:point b))
                         ccwv (ccw (:point a) (:point b) al)]
@@ -113,8 +121,32 @@
                         (not= 0 oCcw) oCcw
                         :else (x-ordered-comparator
                                (:point a) (:point b)))))
-                  :else (let [mpa (midpoint al ar)
+                  :else (let [al (left-bound a y)
+                              bl (left-bound b y)
+                              ar (right-bound a y)
+                              br (right-bound b y)
+                              mpa (midpoint al ar)
                               mpb (midpoint bl br)
                               c (x-ordered-comparator mpa mpb)]
                           c))]
-        res)))
+        res))))
+
+(defn arc-comparator
+  "
+  @param {!Object} a
+  @param {!Object} b
+  @return {!number}
+  "
+  [a b]
+  (if (= a b)
+    0
+    (let [aq (:query a)
+          bq (:query b)
+          isQuery (or aq bq)
+          y (if isQuery
+              (if aq (:y a) (:y b))
+              (max (:added-at a) (:added-at b)))]
+      (cond
+        aq (if (q-larger a b y) 1 -1)
+        bq (if (q-larger b a y) -1 1)
+        :else (arcs-comparator a b y)))))

@@ -34,7 +34,29 @@
        ;; [:div
        ;;  [:p "Just a pretty picture for now"]]
        [new-app-thing db "animation-playground"]
-       [:div [:a {:href "/#intro"} "<- back"]]])))
+       [:div [:a {:href "/intro"} "<- back"]]])))
+
+(def new-misc-state
+  {:first (vor/new-voronoi initial-points)
+   :second  (vor/finish (vor/new-voronoi (points/random-points 20)))})
+
+(defn misc [db]
+  (swap! db #(if % % new-misc-state))
+  (let []
+    (fn []
+      [:div
+       [:div
+        [:div.graphics
+         {:style {:width 400
+                  :height 400}}
+         [voronoi-svg (reagent/cursor db [:first])]]
+        [:div.graphics
+         {:style {:width 400
+                  :height 400}}
+         [voronoi-svg (reagent/cursor db [:second])]]
+        [:div.links
+         [:a {:href "/intro"} "Tell me more ->"]]
+        ]])))
 
 (defn intro []
   [:div [:h2 "Voronoi Diagrams"]
@@ -53,4 +75,7 @@
      [:p "Novel, this project has no novel contributions to offer to the world."
       " Any seemingly deep insight was much more deeply pursued by somebody else."
       " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]
-   [:div [:a {:href "/#animation-playground"} "voronoi diagrams ->"]]])
+   [:div
+    [:a {:href "/animation-playground"} "voronoi diagrams ->"]
+    [:br]
+    [:a {:href "/misc"} "misc <-"]]])

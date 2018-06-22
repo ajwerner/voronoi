@@ -12,15 +12,15 @@
   #?(:clj java.lang.Double/NEGATIVE_INFINITY
      :cljs js/Number.NEGATIVE_INFINITY))
 
-(defn isNaN? [n]
+(defn isNaN? [^double n]
   #?(:clj (java.lang.Double/isNaN n)
      :cljs (js/isNaN n)))
 
-(defn sqrt [v]
+(defn sqrt ^double [^double v]
   #?(:clj (java.lang.Math/sqrt v)
      :cljs (.sqrt js/Math v)))
 
-(defn sin [v]
+(defn sin ^double [^double v]
      #?(:clj (java.lang.Math/sin v)
         :cljs (js/Math.sin v)))
 
@@ -36,14 +36,14 @@
 ;; Basic Geometry
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn sq [x] (* x x))
+(defn sq ^double [^double x] (* x x))
 
-(defn abs [n] (max n (- n)))
+(defn abs ^double [n] (max n (- n)))
 
-(defn within-epsilon [a b epsilon]
+(defn within-epsilon [^double a ^double b ^double epsilon]
   (< (abs (- a b)) epsilon))
 
 (def epsilon 1e-8)
 
-(defn close [a b]
+(defn close [^double a ^double b]
   (within-epsilon a b epsilon))

@@ -1,30 +1,33 @@
 (ns voronoi.break-point
   (:require [voronoi.util :refer [Infinity -Infinity sqrt isNaN? sq close]]
-            [voronoi.point :refer [->Point]]))
+            [voronoi.point :refer [->Point]]
+           ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Break Points
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrecord BreakPoint [left right edge side begin])
 
-(defn break-point-point [p sweep-y]
-  (let [l (:left p)
-        r (:right p)]
-    (if (close (:y l) (:y r))
-      ;; vertical line case
-      (let [x (/ (+ (:x l) (:x r))
-                 2)
-            y (if (= (:y l) sweep-y)
-                sweep-y
-                (/ (+ (sq (- x (:x l)))
-                      (sq (:y l))
-                      (* -1 (sq sweep-y)))
-                   (* 2 (- (:y l) sweep-y))))]
-        (->Point x y))
-      (let [px (:x l) ;; we could imagine using r rather than l
-            py (:y l)
-            m (:m (:edge p))
-            b (:b (:edge p))
+#?(:clj (set! *warn-on-reflection* true))
+
+(defprotocol IBreakPointPoint
+  (point-x [this sweep-y])
+  (point-y [this sweep-y x]))
+
+(deftype ^:private BreakPointArgs
+    [^double lx
+     ^double ly
+     ^double rx
+     ^double ry
+     ^double m
+     ^double b
+     ^boolean is-vert]
+  IBreakPointPoint
+  (point-x [this sweep-y]
+    (if is-vert
+      (/ (+ lx rx) 2)
+      (let [px lx
+            py ly
+            oy ry
             d (* 2 (- py sweep-y))
             A 1
             B (- (* -2 px) (* d m))
@@ -35,15 +38,47 @@
             x (if (<= descrim 0) ;; deal with near zero precision cases
                 (/ (* -1 B) (* 2 A))
                 (let [num (- (* -1 B) (sqrt descrim))]
-                  (if (> (:y l) (:y r))
+                  (if (> py oy)
                     ;; if left, use more precise float logic by rationalizing
                     ;; the denominator
                     (/ (* 2 C) num)
-                    (/ num (* 2 A)))))
-            y (+ (* m x) b)]
-        (->Point x y)))))
+                    (/ num (* 2 A)))))]
+        x)))
+  (point-y [this sweep-y x]
+    (if is-vert
+      (if (= ly sweep-y)
+        sweep-y
+        (/ (+ (sq (- x lx))
+              (sq ly)
+              (* -1 (sq sweep-y)))
+           (* 2 (- ly sweep-y))))
+      (+ (* m x) b))))
 
-(defn new-break-point [left right edge side y]
-  (let [p (->BreakPoint left right edge side 0)
-        p (assoc p :begin (break-point-point p y))]
-    p))
+
+(defn ^:private break-point-point-with-args
+  "
+  @param {IBreakPointPoint} args
+  @param {number} y
+  @return {voronoi.point.Point}
+  "
+  [^BreakPointArgs args ^double y]
+  (let [x (point-x args y)
+        y (point-y args y x)]
+    (->Point x y)))
+
+(defn break-point-point
+  "@return {voronoi.point.Point}"
+  [p ^double sweep-y]
+  (break-point-point-with-args (:pp p) sweep-y))
+
+(defn new-break-point [{lx :x ly :y :as left}
+                       {rx :x ry :y :as right}
+                       {m :m b :b :as edge}
+                       side y]
+  (let [a (BreakPointArgs. lx ly rx ry m b (close ly ry))]
+    {:left left
+     :right right
+     :edge edge
+     :side side
+     :pp a
+     :begin (break-point-point-with-args a y)}))
