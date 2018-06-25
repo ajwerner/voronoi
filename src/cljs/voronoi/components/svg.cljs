@@ -1,8 +1,9 @@
 (ns voronoi.components.svg
-  (:require [voronoi.util :refer [Infinity -Infinity isNaN?]]
+  (:require [voronoi.util :refer [Infinity -Infinity isNaN? is-infinite?]]
             [voronoi.voronoi :as vor]
             [voronoi.arc :as arc]
             [voronoi.break-point :refer [break-point-point]]
+            [voronoi.point :as point]
             [clojure.string :as string]
             [voronoi.points :as points]
             [reagent.core :as reagent]))
@@ -18,9 +19,6 @@
              (* 2 (- b c)))]
     y))
 
-(defn is-infinity? [n]
-  (or (== n Infinity)
-      (== n -Infinity)))
 
 (defn draw-parabola [foc y xmin xmax]
   (let [y1 (parabola-point-y foc y xmin)
@@ -31,7 +29,7 @@
                     (/ (:x foc) denom))
                  (/ (- xmax xmin) 2)))
         y2 (parabola-point-y foc y xmax)]
-    (if (not-any? #(or (is-infinity? %) (isNaN? %)) [y1 cx cy y2])
+    (if (not-any? #(or (is-infinite? %) (isNaN? %)) [y1 cx cy y2])
       [:path {:d (str
                   "M " xmin " " y1
                   " Q " cx " " cy " " xmax " " y2)
@@ -63,7 +61,7 @@
 
 
 (defn line [x1 y1 x2 y2 attrs]
-  [:line (into attrs {:x1 x1 :y1 y1 :x2 x2 :y2 y2 :stroke-width .8})])
+  [:line (into attrs {:x1 x1 :y1 y1 :x2 x2 :y2 y2 :stroke-width .3})])
 
 (defn draw-sweep-line [y xmin xmax]
   [:g (line xmin y xmax y {:stroke "black"
@@ -101,7 +99,7 @@
                  (fn [i c]
                    (let [{{bx :x by :y} :begin
                           {ex :x ey :y} :end} c
-                         ok (not-any? is-infinity? [bx by ex ey])]
+                         ok (not-any? is-infinite? [bx by ex ey])]
                      (if ok
                        ^{:key i} [line bx by ex ey {:stroke "blue"}]
                        (do
@@ -140,38 +138,43 @@
        [draw-parabolas arcs y xmin xmax]
        [draw-breaks breaks y]])))
 
-(defn bound-box [points]
-  (let [xs (map :x points)
-        ys (map :y points)]
-    [(apply min xs)
-     (apply max xs)
-     (apply min ys)
-     (apply max ys)]))
+(defn draw-polygons [vor-cursor]
+  (fn []
+    (if-let [p (vor/polygons @vor-cursor)]
+      [:g.finished
+       (map-indexed
+        (fn [i points]
+          (let [points-str
+                (string/join " " (map #(str (:x %) "," (:y %)) points))]
+            ^{:key i} [:polygon {:points points-str}]))
+        (remove #(some (fn [{x :x}] (is-infinite? x)) %) p))])))
 
-(defn widen-by-percent [[minx maxx miny maxy] percent]
-  (let [x-width (- maxx minx)
-        y-width (- maxy miny)
-        x-add (/ (* x-width (/ percent 100.0)) 2)
-        y-add (/ (* y-width (/ percent 100.0)) 2)]
-    [(- minx x-add)
-     (+ maxx x-add)
-     (- miny y-add)
-     (+ maxy y-add)]))
+(defn draw-extent [extent-cursor]
+  (fn []
+
+    (if-let [extent @extent-cursor]
+      (let [[xmin xmax ymin ymax] extent]
+        [:g
+         ^{:key 0} (line xmin ymin xmax ymin {:stroke "black"})
+         ^{:key 1} (line xmin ymin xmin ymax {:stroke "black"})
+         ^{:key 2} (line xmin ymax xmax ymax {:stroke "black"})
+         ^{:key 2} (line xmax ymin xmax ymax {:stroke "black"})]))))
 
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
   [voronoi scroll]
   (let [points-cursor (reagent/cursor voronoi [:points])
-        complete-cursor (reagent/cursor voronoi [:completed])]
+        complete-cursor (reagent/cursor voronoi [:completed])
+        extent (reagent/cursor voronoi [:extent])]
     (if-not scroll
-      (let [[xmin xmax ymin ymax] (widen-by-percent (bound-box @points-cursor) 120)
-
-            ]
+      (let [[xmin xmax ymin ymax] (point/widen-by-percent (point/bound-box @points-cursor) 60)]
         [:div
          [:svg {
                 :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
                 :preserveAspectRatio "xMaxYMax meet"}
+          [draw-extent extent]
+          [draw-polygons voronoi]
           [draw-points points-cursor]
           [draw-complete-half-edges complete-cursor]
           [draw-sweep-state voronoi -1000 1000]]])

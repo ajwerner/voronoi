@@ -1,7 +1,7 @@
 (ns voronoi.voronoi
   (:require [clojure.string :as str]
             [clojure.data.avl :as avl]
-            [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close]]
+            [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close is-infinite?]]
             [voronoi.point :as point]
             [voronoi.arc :as arc]
             [voronoi.break-point :as bp]
@@ -22,16 +22,38 @@
           processed (if-not exists (processed cur) processed)]
       (recur (rest to-process) processed))))
 
+;; we want to write a thing to make a list of points
+
+(defn outside-extent? [[xmin xmax ymin ymax :as extent] {x :x y :y}]
+  (let [p (and (some? extent)
+               (or
+                (< x xmin)
+                (> x xmax)
+                (< y ymin)
+                (> y ymax)))]
+    p))
+
+(defn create-points-from-input [input extent]
+  (->> input
+      (remove #(outside-extent? extent %))
+      (map point/map->Point)))
+
 (defn new-voronoi
   "Returns a map representing a voronoi builder"
-  [input]
-  (let [points (map point/map->Point input)
+  [input & {:keys [extent]
+            }]
+  (let [points (create-points-from-input input extent)
+        extent (if extent extent
+                   (-> points
+                       (point/bound-box)
+                       (point/widen-by-percent 40)))
         events (into (sorted-set-by event/event-comparator) points)
         scan (:y (first events))]
     {:input input
      :points points
      :scan scan
      :events events
+     :extent extent
      :edges []
      :completed []
      :breaks #{}
@@ -97,7 +119,7 @@
                   (assoc new-h-e :p2 (:vert ev)))
         bp (bp/new-break-point (:left (:left arc))
                                (:right (:right arc))
-                               new-h-e side y nil)
+                               new-h-e side y (:vert ev))
         new-arc-left (arc/new-arc (:left arc-left) bp y)
         ce-l (circle-event new-arc-left)
         new-arc-right (arc/new-arc bp (:right arc-right) y)
@@ -307,37 +329,133 @@
                  (rest breaks)))
         (dissoc! v :breaks)))))
 
+(def x-is-infinite?
+  (comp is-infinite? :x))
+
 (defn polygon-for-cells [site vor]
   (let [cell-indices (get (:cells vor) site)
         edges (:completed vor)
-        f (comp
-           (fn [edge]
-             (if (= site (:left edge))
-               [(:p0 edge) (:p1 edge)]
-               [(:p1 edge) (:p0 edge)]))
-           (fn [n]
-             (nth edges n)))
-        m (apply hash-map (flatten (map f cell-indices)))
-        _ (println m "\n\n")
+        m (->> cell-indices
+               (map (comp
+                     (fn [edge]
+                       (if (= site (:left edge))
+                         [(:p0 edge) (:p1 edge)]
+                         [(:p1 edge) (:p0 edge)]))
+                     (fn [n]
+                       (nth edges n))))
+               (remove #(= (first %) (second %)))
+               (flatten)
+               (apply hash-map))
+        inv (clojure.set/map-invert m)
+        k (if-let [k (some #(when (not (contains? inv %)) %) (keys m))]
+            k
+            (key (first m)))
+        d (loop [l [k]]
+            (let [n (get m (peek l))]
+              (if (or (= n (first l))
+                      (nil? n))
+                l
+                (recur (conj l n)))))
         ]
-    (if true
-      (loop [l [(key (first m))]]
-        (let [n (get m (peek l))]
-          (println "hi " (peek l) "\n" n)
-          (if (or (= n (first l))
-                  (nil? n)
-                  (> (count l) 10))
-            l
-            (recur (conj l n))))))))
+    (if (not= (count d) (count m))
+      ;; decide whether we add one edge or two,
+      ;; add 'em
+      ;; (println (count d) (count m) "\n" m "\n" d)
+      nil
+      )
+    d))
 
+;; for each cell, we'll go through and clip any edges which need to be clipped
+;; the problem with this is an edge may be shared and need to get clipped
+;; maybe we can do this as a breadth first search algorithm
+
+;; TODO: refactor this to be less gross
+
+(defn clip-left-out
+  "
+  Clips the completed edge to the extent boundary
+  For now defer adding edges
+  "
+  [[xmin xmax ymin ymax]
+   {{m :m b :b} :edge
+    p0 :p0
+    p1 :p1
+    :as c}]
+  ;; we want to find out what it intercepts
+  (cond
+    (> (:x p0) (:x p1))
+    (let [clip-y (+ (* m xmax) b)
+          [x y] (cond
+                  (> clip-y ymax) [(/ (- ymax b) m) ymax]
+                  (< clip-y ymin) [(/ (- ymin b) m) ymin]
+                  :else [xmax clip-y])]
+      (assoc c :p0 (point/->Point x y)))
+    (< (:x p0) (:x p1))
+    (let [clip-y (+ (* m xmin) b)
+          [x y] (cond
+                  (> clip-y ymax) [(/ (- ymax b) m) ymax]
+                  (< clip-y ymin) [(/ (- ymin b) m) ymin]
+                  :else [xmin clip-y])]
+      (assoc c :p0 (point/->Point x y)))))
+
+(defn clip-right-out
+  "
+  Clips the completed edge to the extent boundary
+  For now defer adding edges
+  "
+  [[xmin xmax ymin ymax]
+   {{m :m b :b} :edge
+    p0 :p0
+    p1 :p1
+    :as c}]
+  ;; we want to find out what it intercepts
+  (cond
+    (> (:x p1) (:x p0))
+    (let [clip-y (+ (* m xmax) b)
+          [x y] (cond
+                  (> clip-y ymax) [(/ (- ymax b) m) ymax]
+                  (< clip-y ymin) [(/ (- ymin b) m) ymin]
+                  :else [xmax clip-y])]
+      (assoc c :p1 (point/->Point x y)))
+    (< (:x p1) (:x p0))
+    (let [clip-y (+ (* m xmin) b)
+          [x y] (cond
+                  (> clip-y ymax) [(/ (- ymax b) m) ymax]
+                  (< clip-y ymin) [(/ (- ymin b) m) ymin]
+                  :else [xmin clip-y])]
+      (assoc c :p1 (point/->Point x y)))))
+
+(defn clip-cells [{cells :cells
+                   completed :completed
+                   extent :extent
+                   :as vor}]
+  (if (nil? extent)
+    vor
+    (->> completed
+         (map (fn [{p0 :p0 p1 :p1 :as c}]
+                (let [out0 (outside-extent? extent p0)
+                      out1 (outside-extent? extent p1)]
+                  (cond
+                    (and out0 (not out1)) (clip-left-out extent c)
+                    (and out1 (not out0)) (clip-right-out extent c)
+                    (and out0 out1) nil
+                    :else c))))
+         (remove nil?)
+         (into []))))
 
 (defn polygons [vor]
-  (map #(polygon-for-cells % vor) (keys (:cells vor))))
+  (if-some [cells (:cells vor)]
+    (map #(polygon-for-cells % vor) (keys cells))
+    nil))
 
 (defn finish [vor]
   (let [v (-> vor
               (make-transient)
               (process-all-events!)
               (complete-all-cells!)
-              (make-persistent!))]
+              (make-persistent!))
+        v (as-> v v
+              (assoc v :completed (clip-cells v))
+              (assoc v :cells (make-cells v)))]
+
     (assoc v :cells (make-cells v))))

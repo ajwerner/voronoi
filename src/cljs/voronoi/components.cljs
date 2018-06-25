@@ -38,7 +38,11 @@
 (def new-misc-state
   {:crazy (vor/finish (vor/new-voronoi initial-points))
    :random (vor/finish (vor/new-voronoi (points/random-points 500)))
-   :circle (vor/finish (vor/new-voronoi (points/circle-points 400 200 100 100)))})
+   :circle (vor/finish (vor/new-voronoi (points/circle-points 71 200 100 100)))
+   })
+
+;;:grid (vor/finish (vor/new-voronoi (points/extent-grid [0 1000 0 1000] 100)))
+;;[:div [voronoi-svg (reagent/cursor db [:grid])]]
 
 (defn misc [db]
   (swap! db #(if % % new-misc-state))
@@ -49,6 +53,7 @@
         [:div [voronoi-svg (reagent/cursor db [:random])]]
         [:div [voronoi-svg (reagent/cursor db [:crazy])]]
         [:div [voronoi-svg (reagent/cursor db [:circle])]]
+
         [:div.links
          [:a {:href "#/intro"} "Tell me more ->"]]]])))
 

@@ -39,6 +39,7 @@
      (* (- (.-y b) (.-y a))
         (- (.-x c) (.-x a)))))
 
+
 (defn ccw
   "
   @param {!Point|!voronoi.event.CircleEvent} a
@@ -85,3 +86,22 @@
 
 (def y-ordered-epsilon-comparator
   (dims-epsilon-comparator :y :x))
+
+
+(defn bound-box [points]
+  (let [xs (map :x points)
+        ys (map :y points)]
+    [(apply min xs)
+     (apply max xs)
+     (apply min ys)
+     (apply max ys)]))
+
+(defn widen-by-percent [[minx maxx miny maxy] percent]
+  (let [x-width (- maxx minx)
+        y-width (- maxy miny)
+        x-add (/ (* x-width (/ percent 100.0)) 2)
+        y-add (/ (* y-width (/ percent 100.0)) 2)]
+    [(- minx x-add)
+     (+ maxx x-add)
+     (- miny y-add)
+     (+ maxy y-add)]))

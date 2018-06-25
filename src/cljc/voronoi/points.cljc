@@ -21,6 +21,14 @@
         points-lists (grid n [(/ xgap 2) (/ ygap 2)] xgap ygap)]
     (points-lists-to-points points-lists)))
 
+(defn extent-grid [[xmin xmax ymin ymax] n]
+  (let [xwidth (- xmax xmin)
+        ywidth (- ymax ymin)
+        xgap (/ xwidth n)
+        ygap (/ ywidth n)
+        points-lists (grid n [(/ xgap 2) (/ ygap 2)] xgap ygap)]
+    (points-lists-to-points points-lists)))
+
 (defn circle-points [n rad cx cy]
   (let [step-size (/ (* 2 PI) n)
         points (for [r (map #(* step-size %) (range n))]

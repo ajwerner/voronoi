@@ -19,6 +19,10 @@
      :cljs (let [pow (.pow js/Math 10 digits)]
              (/ (.round js/Math (* n pow)) pow))))
 
+(defn is-infinite? [n]
+  (or (== n Infinity)
+      (== n -Infinity)))
+
 (defn isNaN? [^double n]
   #?(:clj (java.lang.Double/isNaN n)
      :cljs (js/isNaN n)))
