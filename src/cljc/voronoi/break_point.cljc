@@ -1,5 +1,5 @@
 (ns voronoi.break-point
-  (:require [voronoi.util :refer [Infinity -Infinity sqrt isNaN? sq close]]
+  (:require [voronoi.util :refer [Infinity -Infinity sqrt isNaN? sq close to-fixed]]
             [voronoi.point :refer [->Point]]
            ))
 
@@ -74,11 +74,14 @@
 (defn new-break-point [{lx :x ly :y :as left}
                        {rx :x ry :y :as right}
                        {m :m b :b :as edge}
-                       side y]
-  (let [a (BreakPointArgs. lx ly rx ry m b (close ly ry))]
+                       side y begin]
+  (let [a (BreakPointArgs. lx ly rx ry m b (close ly ry))
+        begin (if (some? begin)
+                begin
+                (break-point-point-with-args a y))]
     {:left left
      :right right
      :edge edge
      :side side
      :pp a
-     :begin (break-point-point-with-args a y)}))
+     :begin begin }))

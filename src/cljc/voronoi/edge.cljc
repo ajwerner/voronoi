@@ -45,3 +45,26 @@
                   y (+ (* (:m e1) x)
                        (:b e1))]
               (->Point x y)))))
+
+(defn new-complete [{begin :begin
+                     edge :edge
+                     side :side
+                     left :left
+                     right :right
+                     :as bp}
+                    end]
+  (condp side =
+    :left {:begin begin
+           :end end
+           :p0 end
+           :p1 begin
+           :left right
+           :right left
+           :edge edge}
+    :right {:begin begin
+            :end end
+            :p0 begin
+            :p1 end
+            :left left
+            :right right
+            :edge edge}))

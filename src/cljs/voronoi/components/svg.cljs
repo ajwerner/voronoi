@@ -103,17 +103,26 @@
                           {ex :x ey :y} :end} c
                          ok (not-any? is-infinity? [bx by ex ey])]
                      (if ok
-                       ^{:key i} [line bx by ex ey {:stroke "blue"}])))
+                       ^{:key i} [line bx by ex ey {:stroke "blue"}]
+                       (do
+                         (let [edge (:edge c)]
+                           (if (:is-vertical edge)
+                             ^{:key i} [line bx by bx (- by 10000) {:stroke "green"}]
+                             (let [x (if (= Infinity ex)
+                                       (+ bx 1000)
+                                       (- bx 1000))
+                                   y (+ (* (:m edge) x) (:b edge))]
+                               ^{:key i} [line bx by x y {:stroke "blue"}])))))))
                  complete))]]
 
         c))))
 
-;; ^{:key i} [completed-comp completeds i]
-
 (defn draw-break [bp y]
   (let [{bx :x by :y} (:begin bp)
         {px :x py :y} (break-point-point bp y)]
-    ^{:key bp} (line  bx by px py {:stroke "red"})))
+    ^{:key bp} (line  bx by px py {:stroke (if (= :left (:side bp))
+                                             "red"
+                                             "cyan")})))
 
 (defn draw-breaks [breaks y]
   [:g
@@ -139,29 +148,15 @@
      (apply min ys)
      (apply max ys)]))
 
-
-
-;; (defn bound-box [points]
-;;   (println ((juxt :x :x :y :y) (first points)))
-;;   (loop [[x-min x-max y-min y-max :as vals]
-;;          ((juxt :x :x :y :y) (first points))
-;;          points points]
-;;     (if points
-;;       (let [s (partition
-;;                3 (interleave
-;;                   [min max min max]
-;;                   ((juxt :x :x :y :y) (first points))
-;;                   vals))
-;;             ;;_ (println "a" s "b" points)
-;;             (map
-;;              #(apply (fn [a b c ] (a b c)) %)
-
-;;              s)]
-
-;;         (recur m (rest points)))
-;;       vals)))
-
-(println (bound-box (points/random-points 4)))
+(defn widen-by-percent [[minx maxx miny maxy] percent]
+  (let [x-width (- maxx minx)
+        y-width (- maxy miny)
+        x-add (/ (* x-width (/ percent 100.0)) 2)
+        y-add (/ (* y-width (/ percent 100.0)) 2)]
+    [(- minx x-add)
+     (+ maxx x-add)
+     (- miny y-add)
+     (+ maxy y-add)]))
 
 (defn voronoi-svg
   "draws an svg
@@ -169,9 +164,8 @@
   [voronoi scroll]
   (let [points-cursor (reagent/cursor voronoi [:points])
         complete-cursor (reagent/cursor voronoi [:completed])]
-
     (if-not scroll
-      (let [[xmin xmax ymin ymax] (bound-box @points-cursor)
+      (let [[xmin xmax ymin ymax] (widen-by-percent (bound-box @points-cursor) 120)
 
             ]
         [:div
@@ -222,7 +216,7 @@
                    :on-touch-end clear
                    :on-touch-cancel clear}
              [:svg {:viewBox view-box
-                    :preserveAspectRatio "xMaxYMax slice"}
+                    :preserveAspectRatio "xMidYMid meet"}
 
               [draw-points points-cursor]
               [draw-complete-half-edges complete-cursor]

@@ -1,6 +1,7 @@
 (ns voronoi.components.arc-table
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.arc :as arc]
+            [voronoi.util :as u]
             [voronoi.point :refer [distance]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

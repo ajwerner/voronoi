@@ -30,15 +30,15 @@
 (defn animation-playground [db]
   (let []
     (fn []
-      [:div ;;[:h2 "Voronoi diagrams"]
-       ;; [:div
-       ;;  [:p "Just a pretty picture for now"]]
+      [:div [:h2 "Voronoi diagrams"]
+       [:div [:p "Just a pretty picture for now"]]
        [new-app-thing db "animation-playground"]
-       [:div [:a {:href "/intro"} "<- back"]]])))
+       [:div [:a {:href "#/intro"} "<- back"]]])))
 
 (def new-misc-state
-  {:first (vor/new-voronoi initial-points)
-   :second  (vor/finish (vor/new-voronoi (points/random-points 20)))})
+  {:crazy (vor/finish (vor/new-voronoi initial-points))
+   :random (vor/finish (vor/new-voronoi (points/random-points 500)))
+   :circle (vor/finish (vor/new-voronoi (points/circle-points 400 200 100 100)))})
 
 (defn misc [db]
   (swap! db #(if % % new-misc-state))
@@ -46,17 +46,11 @@
     (fn []
       [:div
        [:div
-        [:div.graphics
-         {:style {:width 400
-                  :height 400}}
-         [voronoi-svg (reagent/cursor db [:first])]]
-        [:div.graphics
-         {:style {:width 400
-                  :height 400}}
-         [voronoi-svg (reagent/cursor db [:second])]]
+        [:div [voronoi-svg (reagent/cursor db [:random])]]
+        [:div [voronoi-svg (reagent/cursor db [:crazy])]]
+        [:div [voronoi-svg (reagent/cursor db [:circle])]]
         [:div.links
-         [:a {:href "/intro"} "Tell me more ->"]]
-        ]])))
+         [:a {:href "#/intro"} "Tell me more ->"]]]])))
 
 (defn intro []
   [:div [:h2 "Voronoi Diagrams"]
@@ -76,6 +70,23 @@
       " Any seemingly deep insight was much more deeply pursued by somebody else."
       " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]
    [:div
-    [:a {:href "/animation-playground"} "voronoi diagrams ->"]
+    [:a {:href "#/animation-playground"} "voronoi diagrams ->"]
     [:br]
-    [:a {:href "/misc"} "misc <-"]]])
+    [:a {:href "#/misc"} "misc <-"]
+    [:br]
+    [:a {:href "#/voronoi-diagrams"} "about diagrams"]]])
+
+(defn voronoi-diagrams []
+  [:div
+   [:h2 "What's a Voronoi Diagram"]
+   [:div
+    [:p
+     "Say you have a bunch of points in plane. "
+     "Maybe these bare cities on a map*"
+     "And you want to know the area closest to each city based on distance."
+     "Voronoi diagrams are your tool"]
+    [:p
+     "A common use case for these diagrams are to create tooltips for graphs"
+     "Efficient algorithms exist to find which polygon in a set contain some point"
+     "(See point containment search, these are actually easy to make much faster when you can ensure that the polygons do not overlap)"
+     "See BSP trees"]]])

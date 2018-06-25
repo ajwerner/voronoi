@@ -12,6 +12,13 @@
   #?(:clj java.lang.Double/NEGATIVE_INFINITY
      :cljs js/Number.NEGATIVE_INFINITY))
 
+(defn ^double to-fixed [^double n digits]
+  #?(:clj (doto (new java.math.BigDecimal n)
+            (.setScale digits java.math.RoundingMode/HALF_EVEN)
+            (.doubleValue))
+     :cljs (let [pow (.pow js/Math 10 digits)]
+             (/ (.round js/Math (* n pow)) pow))))
+
 (defn isNaN? [^double n]
   #?(:clj (java.lang.Double/isNaN n)
      :cljs (js/isNaN n)))
