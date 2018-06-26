@@ -145,8 +145,12 @@
        (map-indexed
         (fn [i points]
           (let [points-str
-                (string/join " " (map #(str (:x %) "," (:y %)) points))]
-            ^{:key i} [:polygon {:points points-str}]))
+                (string/join " " (map #(str (:x %) "," (:y %)) points))
+                {fx :x fy :y} (first points)
+                ]
+            ^{:key i} [:polygon {:points points-str}]
+
+            ))
         (remove #(some (fn [{x :x}] (is-infinite? x)) %) p))])))
 
 (defn draw-extent [extent-cursor]
@@ -160,67 +164,75 @@
          ^{:key 2} (line xmin ymax xmax ymax {:stroke "black"})
          ^{:key 2} (line xmax ymin xmax ymax {:stroke "black"})]))))
 
+(defn interactive-svg [voronoi scroll]
+  (let [scroll-cursor (swap! scroll #(if % % {:x -80
+                                              :y -200
+                                                   :x-width 1200
+                                                   :y-width 1800
+                                              :prev nil}))
+        handle-tm (fn [{:keys [prev x y x-width y-width]
+                        :as scroll} ev]
+                    (let [t (aget (.-touches ev) 0)
+                          scroll (assoc scroll :prev t)
+                          shift (.-shiftKey ev)]
+                      (if prev
+                        (let [xdelta (* (- (.-screenX t)
+                                           (.-screenX prev))
+                                        (/ x-width 1200))
+                              ydelta (* (- (.-screenY t)
+                                               (.-screenY prev))
+                                        (/ y-width 1800))]
+                          (if shift
+                            (let [size nil]
+                              (-> scroll
+                                  (update :x-width #(max (- % xdelta) 0))
+                                  (update :y-width #(max (- % ydelta) 0))
+                                  ))
+                            (-> scroll
+                                (update :x - (/ xdelta 1))
+                                (update :y - (/ ydelta 1)))))
+                        scroll)))
+        tm (fn [ev]
+
+             (swap! scroll handle-tm ev))
+        clear (fn [ev]
+
+                (swap! scroll #(assoc % :prev nil)))
+        points-cursor (reagent/cursor voronoi [:points])
+        complete-cursor (reagent/cursor voronoi [:completed])
+        extent (reagent/cursor voronoi [:extent])
+        ]
+    (fn []
+      (let [{:keys [x y x-width y-width]} @scroll
+            view-box (string/join " " [x y x-width y-width])]
+        [:div {:on-touch-move tm
+               :on-touch-end clear
+               :on-touch-cancel clear}
+         [:svg {:viewBox view-box
+                :preserveAspectRatio "xMidYMid meet"}
+
+          [draw-points points-cursor]
+          [draw-complete-half-edges complete-cursor]
+          [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))
+
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
-  [voronoi scroll]
+  [voronoi]
   (let [points-cursor (reagent/cursor voronoi [:points])
         complete-cursor (reagent/cursor voronoi [:completed])
-        extent (reagent/cursor voronoi [:extent])]
-    (if-not scroll
-      (let [[xmin xmax ymin ymax] (point/widen-by-percent (point/bound-box @points-cursor) 60)]
-        [:div
-         [:svg {
-                :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
-                :preserveAspectRatio "xMaxYMax meet"}
-          [draw-extent extent]
-          [draw-polygons voronoi]
-          [draw-points points-cursor]
-          [draw-complete-half-edges complete-cursor]
-          [draw-sweep-state voronoi -1000 1000]]])
-      (let [ scroll-cursor (swap! scroll #(if % % {:x -80
-                                                   :y -200
-                                                   :x-width 1200
-                                                   :y-width 1800
-                                                   :prev nil}))
-            handle-tm (fn [{:keys [prev x y x-width y-width]
-                            :as scroll} ev]
-                        (let [t (aget (.-touches ev) 0)
-                              scroll (assoc scroll :prev t)
-                              shift (.-shiftKey ev)]
-                          (if prev
-                            (let [xdelta (* (- (.-screenX t)
-                                               (.-screenX prev))
-                                            (/ x-width 1200))
-                                  ydelta (* (- (.-screenY t)
-                                               (.-screenY prev))
-                                            (/ y-width 1800))]
-                              (if shift
-                                (let [size nil]
-                                  (-> scroll
-                                      (update :x-width #(max (- % xdelta) 0))
-                                      (update :y-width #(max (- % ydelta) 0))
-                                      ))
-                                (-> scroll
-                                    (update :x - (/ xdelta 1))
-                                    (update :y - (/ ydelta 1)))))
-                            scroll)))
-            tm (fn [ev]
-
-                 (swap! scroll handle-tm ev))
-            clear (fn [ev]
-
-                    (swap! scroll #(assoc % :prev nil)))
-            ]
-        (fn []
-          (let [{:keys [x y x-width y-width]} @scroll
-                view-box (string/join " " [x y x-width y-width])]
-            [:div {:on-touch-move tm
-                   :on-touch-end clear
-                   :on-touch-cancel clear}
-             [:svg {:viewBox view-box
-                    :preserveAspectRatio "xMidYMid meet"}
-
-              [draw-points points-cursor]
-              [draw-complete-half-edges complete-cursor]
-              [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))))
+        extent (reagent/cursor voronoi [:extent])
+        [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)
+        ;; (point/widen-by-percent
+        ;;  (point/bound-box @points-cursor) 60)
+        ]
+    [:div
+     [:svg {
+            :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
+            :preserveAspectRatio "xMaxYMax meet"}
+      [draw-extent extent]
+      [draw-polygons voronoi]
+      [draw-points points-cursor]
+      [draw-complete-half-edges complete-cursor]
+      ;;[draw-sweep-state voronoi -1000 1000]
+      ]]))

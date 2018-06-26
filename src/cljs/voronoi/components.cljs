@@ -3,7 +3,7 @@
             [voronoi.voronoi :as vor]
             [voronoi.points :as points]
             [voronoi.components.arc-table :refer [arc-table-and-toggle]]
-            [voronoi.components.svg :refer [voronoi-svg]]
+            [voronoi.components.svg :refer [voronoi-svg interactive-svg]]
             [voronoi.components.events-panel :refer [events-panel]]
             [voronoi.components.control-panel :refer [control-panel]]))
 
@@ -21,7 +21,7 @@
        [:div.graphics
         {:style {:position "fixed"
                  :overflow "hidden"}}
-        [voronoi-svg vor scroll]]
+        [interactive-svg vor scroll]]
        [control-panel db]
        [arc-table-and-toggle vor]
       ;; [events-panel vor]
@@ -37,25 +37,45 @@
 
 (def new-misc-state
   {:crazy (vor/finish (vor/new-voronoi initial-points))
-   :random (vor/finish (vor/new-voronoi (points/random-points 500)))
+   :random (vor/finish (vor/new-voronoi (points/random-points 1000)))
    :circle (vor/finish (vor/new-voronoi (points/circle-points 71 200 100 100)))
-   })
-
-;;:grid (vor/finish (vor/new-voronoi (points/extent-grid [0 1000 0 1000] 100)))
-;;[:div [voronoi-svg (reagent/cursor db [:grid])]]
+   :circle2 (vor/finish (vor/new-voronoi (points/circle-points 11 200 100 100)))
+   :only-2 (vor/finish (vor/new-voronoi [{:x 100 :y 100}
+                                         {:x 200 :y 110}]
+                                        :extent [70 220 90 120]))
+   :only-2-1 (vor/finish (vor/new-voronoi [{:x 100 :y 100}
+                                           {:x 200 :y 100}]
+                                          :extent [70 220 90 120]))
+   :only-2-2 (vor/finish (vor/new-voronoi [{:x 200 :y 200}
+                                           {:x 200 :y 100}]
+                                          :extent [70 220 90 300]))
+   :only-2-3 (vor/finish (vor/new-voronoi [{:x 200 :y 201}
+                                           {:x 200 :y 100}]
+                                          :extent [70 220 90 300]))
+   :clip-bottom (vor/finish (vor/new-voronoi [{:x 210 :y 300}
+                                              {:x 300 :y 100}
+                                              {:x 49 :y 21}]))
+   :clip-right (vor/finish (vor/new-voronoi [{:x 200 :y 180}
+                                             {:x 300 :y 100}
+                                             {:x 49 :y 21}]))
+   :clip-top (vor/finish (vor/new-voronoi [{:x 200 :y 180}
+                                           {:x 300 :y 100}
+                                           {:x 251 :y 25}]))
+   :clip-left (vor/finish (vor/new-voronoi [{:x 10 :y 180}
+                                           {:x 300 :y 100}
+                                           {:x 251 :y 40}]))})
 
 (defn misc [db]
   (swap! db #(if % % new-misc-state))
   (let []
     (fn []
       [:div
-       [:div
-        [:div [voronoi-svg (reagent/cursor db [:random])]]
-        [:div [voronoi-svg (reagent/cursor db [:crazy])]]
-        [:div [voronoi-svg (reagent/cursor db [:circle])]]
-
-        [:div.links
-         [:a {:href "#/intro"} "Tell me more ->"]]]])))
+       (into
+        [:div.misc]
+        (for [k (keys @db)]
+          [:div ^{:key k} [voronoi-svg (reagent/cursor db [k])]]))
+       [:div.links
+        [:a {:href "#/intro"} "Tell me more ->"]]])))
 
 (defn intro []
   [:div [:h2 "Voronoi Diagrams"]
