@@ -221,10 +221,7 @@
   (let [points-cursor (reagent/cursor voronoi [:points])
         edges-cursor (reagent/cursor voronoi [:edges])
         extent (reagent/cursor voronoi [:extent])
-        [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)
-        ;; (point/widen-by-percent
-        ;;  (point/bound-box @points-cursor) 60)
-        ]
+        [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)]
     [:div
      [:svg {
             :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
