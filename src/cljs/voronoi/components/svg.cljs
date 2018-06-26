@@ -67,15 +67,15 @@
   [:g (line xmin y xmax y {:stroke "black"
                            :stroke-width .1})])
 
-(defn get-completeds [completeds]
-  ;;(println completeds)
-  @completeds)
+(defn get-edges [edges]
+  ;;(println edges)
+  @edges)
 
-(defn get-completed [completeds idx]
-  (-> @(reagent/track get-completeds completeds) (nth idx)))
+(defn get-edge [edges idx]
+  (-> @(reagent/track get-edges edges) (nth idx)))
 
-(defn get-completed-count [completeds]
-  (-> @(reagent/track get-completeds completeds) count))
+(defn get-edges-count [edges]
+  (-> @(reagent/track get-edges edges) count))
 
 ;; (defn completed-comp [completeds i]
 ;;   (let [ts (reagent/track get-completed completeds i)]
@@ -87,11 +87,11 @@
 ;;       (if ok
 ;;         [line bx by ex ey {:stroke "blue"}]))))
 
-(defn draw-complete-half-edges [complete-cursor]
+(defn draw-complete-half-edges [edges-cursor]
   (let []
     (fn []
 
-      (let [complete @complete-cursor
+      (let [edges @edges-cursor
             c [:g
                (doall
                 (map-indexed
@@ -111,8 +111,7 @@
                                        (- bx 1000))
                                    y (+ (* (:m edge) x) (:b edge))]
                                ^{:key i} [line bx by x y {:stroke "blue"}])))))))
-                 complete))]]
-
+                 edges))]]
         c))))
 
 (defn draw-break [bp y]
@@ -199,7 +198,7 @@
 
                 (swap! scroll #(assoc % :prev nil)))
         points-cursor (reagent/cursor voronoi [:points])
-        complete-cursor (reagent/cursor voronoi [:completed])
+        edges-cursor (reagent/cursor voronoi [:edges])
         extent (reagent/cursor voronoi [:extent])
         ]
     (fn []
@@ -212,7 +211,7 @@
                 :preserveAspectRatio "xMidYMid meet"}
 
           [draw-points points-cursor]
-          [draw-complete-half-edges complete-cursor]
+          [draw-complete-half-edges edges-cursor]
           [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))
 
 (defn voronoi-svg
@@ -220,7 +219,7 @@
   expects a ratom for a voronoi diagram"
   [voronoi]
   (let [points-cursor (reagent/cursor voronoi [:points])
-        complete-cursor (reagent/cursor voronoi [:completed])
+        edges-cursor (reagent/cursor voronoi [:edges])
         extent (reagent/cursor voronoi [:extent])
         [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)
         ;; (point/widen-by-percent
@@ -233,6 +232,6 @@
       [draw-extent extent]
       [draw-polygons voronoi]
       [draw-points points-cursor]
-      [draw-complete-half-edges complete-cursor]
+      [draw-complete-half-edges edges-cursor]
       ;;[draw-sweep-state voronoi -1000 1000]
       ]]))
