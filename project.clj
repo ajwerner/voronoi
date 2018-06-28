@@ -51,7 +51,9 @@
              :source-paths ["src/cljs" "src/cljc" "test/cljc" "test/cljs"]
              :compiler {:output-to "resources/public/js/testable.js"
                         :main voronoi.runner
-                        :optimizations :advanced}}
+                        :optimizations :advanced
+                        :npm-deps {:topojson "3.0.2"}
+                        :install-deps true}}
             :min
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
              :compiler
@@ -63,6 +65,7 @@
               :pretty-print  false}}
             :gh-page
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
+
              :compiler
              {:main             "voronoi.core"
               :output-to        "docs/js/app.js"
@@ -78,7 +81,9 @@
                :check-variables :warning
                :undefined-names :off
                :externs-validation :off
-               :missing-properties :off}}}
+               :missing-properties :off}
+              :npm-deps {:topojson "3.0.2"}
+              :install-deps true}}
             :app
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :figwheel {:on-jsload "voronoi.core/mount-root"}
@@ -89,7 +94,9 @@
               :output-dir "target/cljsbuild/public/js/out"
               :source-map true
               :optimizations :none
-              :pretty-print  true}}}
+              :pretty-print  true
+              :npm-deps {:topojson "3.0.2"}
+              :install-deps true}}}
    }
 
   :figwheel

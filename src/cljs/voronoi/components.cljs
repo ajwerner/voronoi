@@ -11,7 +11,9 @@
 
 (enable-console-print!)
 (defn new-app-thing [db id]
-  (swap! db #(if % % {:voronoi (vor/new-voronoi initial-points)
+  (swap! db #(if % % {:voronoi (vor/new-voronoi [{:x 50 :y 25}
+                                                 {:x 100 :y 25}]
+                                                :extent [0 150 0 50])
                       :id id
                       :scroll nil}))
   (let [vor (reagent/cursor db [:voronoi])
@@ -35,11 +37,11 @@
        [new-app-thing db "animation-playground"]
        [:div [:a {:href "#/intro"} "<- back"]]])))
 
-(def new-misc-state
+(defonce new-misc-state
   {:crazy (vor/finish (vor/new-voronoi initial-points))
-   :random (vor/finish (vor/new-voronoi (points/random-points 1000)))
+   :random (vor/finish (vor/new-voronoi (points/random-points 2000)))
    :circle (vor/finish (vor/new-voronoi (points/circle-points 71 200 100 100)))
-   :circle2 (vor/finish (vor/new-voronoi (points/circle-points 11 200 100 100)))
+   :circle2 (vor/finish (vor/new-voronoi (points/circle-points 53 200 100 100)))
    :only-2 (vor/finish (vor/new-voronoi [{:x 100 :y 100}
                                          {:x 200 :y 110}]
                                         :extent [70 220 90 120]))
@@ -62,8 +64,26 @@
                                            {:x 300 :y 100}
                                            {:x 251 :y 25}]))
    :clip-left (vor/finish (vor/new-voronoi [{:x 10 :y 180}
-                                           {:x 300 :y 100}
-                                           {:x 251 :y 40}]))})
+                                            {:x 300 :y 100}
+                                            {:x 251 :y 40}]))
+   :clip-left-straight (vor/finish (vor/new-voronoi [{:x 50 :y 25}
+                                                     {:x 50 :y 50}
+                                                     {:x 100 :y 75}
+                                                     {:x 100 :y 25}]))
+   :clip-up-straight (vor/finish (vor/new-voronoi [{:x 50 :y 25}
+                                                   {:x 50 :y 75}
+                                                   {:x 100 :y 75}
+                                                   {:x 100 :y 25}]))
+   :clip-up-right (vor/finish (vor/new-voronoi [{:x 50 :y 25}
+                                                {:x 79 :y 100}
+                                                {:x 100 :y 25}]))
+   :clip-up-left (vor/finish (vor/new-voronoi [{:x 50 :y 25}
+                                               {:x 73 :y 100}
+                                               {:x 100 :y 25}]))
+   :clip-up-middle (vor/finish (vor/new-voronoi [{:x 50 :y 25}
+                                                 {:x 75 :y 100}
+                                                 {:x 100 :y 25}]))
+   :grid (vor/finish (vor/new-voronoi (points/grid 20 [0 0] 20 20)))})
 
 (defn misc [db]
   (swap! db #(if % % new-misc-state))
@@ -73,7 +93,7 @@
        (into
         [:div.misc]
         (for [k (keys @db)]
-          [:div ^{:key k} [voronoi-svg (reagent/cursor db [k])]]))
+          [:div {:id k} ^{:key k} [voronoi-svg (reagent/cursor db [k])]]))
        [:div.links
         [:a {:href "#/intro"} "Tell me more ->"]]])))
 

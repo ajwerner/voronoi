@@ -1,7 +1,8 @@
 (ns voronoi.voronoi
   (:require [clojure.string :as str]
             [clojure.data.avl :as avl]
-            [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close is-infinite?]]
+            [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close
+                                  is-infinite?]]
             [voronoi.point :as point]
             [voronoi.arc :as arc]
             [voronoi.break-point :as bp]
@@ -12,7 +13,6 @@
 ;; because relative directions assume an orientation.
 ;; The orientation assumed is that (0, 0) is in the top left corner and
 ;; y-increases going down. This can be horribly confusing. I regret it.
-
 
 (defn build-points [initial-points]
   (loop [to-process initial-points
@@ -55,7 +55,6 @@
      :events events
      :extent extent
      :edges []
-     :breaks #{}
      :arcs (avl/sorted-map-by arc/arc-comparator)}))
 
 (defn check-circle [arc]
@@ -77,22 +76,19 @@
           ev (event/->CircleEvent x y center arc)]
       ev)))
 
-(defn make-persistent! [{:keys [arcs events breaks edges] :as vor}]
+(defn make-persistent! [{:keys [arcs edges] :as vor}]
   (cond-> vor
-    (some? breaks)  (assoc! :breaks (persistent! breaks))
     true (assoc! :edges (persistent! edges))
     true (persistent!)))
 
-(defn make-transient [{:keys [arcs events breaks edges] :as vor}]
+(defn make-transient [{:keys [arcs edges] :as vor}]
   (cond-> vor
     true (transient)
-    (some? breaks) (assoc! :breaks (transient breaks))
     true (assoc! :edges (transient edges))))
 
 (defn handle-circle-event!
   [{arcs :arcs
     events :events
-    breaks :breaks
     edges :edges
     :as vor}
    {y :y
@@ -108,7 +104,7 @@
         bp-left (:left (:left arc))
         bp-right (:right (:right arc))
         new-h-e (edge/new-half-edge bp-left bp-right)
-        side (if (< (:y bp-left) (:y bp-right)) :left :right)
+        side (if (<= (:y bp-left) (:y bp-right)) :left :right)
         new-h-e (if (not= side :left)
                   (assoc new-h-e :p1 (:vert ev))
                   (assoc new-h-e :p2 (:vert ev)))
@@ -130,24 +126,20 @@
         arcs (assoc! arcs new-arc-left ce-l)
         arcs (assoc! arcs new-arc-right ce-r)
         arcs (persistent! arcs)
-        breaks (if-let [l (:left arc)] (disj! breaks l) breaks)
-        breaks (if-let [r (:right arc)] (disj! breaks r) breaks)
-        breaks (conj! breaks bp)
         edges (conj! edges (edge/new-complete (:left arc) (:vert ev)))
         edges (conj! edges (edge/new-complete (:right arc) (:vert ev)))]
     (->  vor
          (assoc! :scan y)
          (assoc! :events events)
          (assoc! :arcs arcs)
-         (assoc! :breaks breaks)
          (assoc! :edges edges))))
 
 (defn ^:private handle-later-site-event!
   "Used after the first site event where things are weird."
-  [{breaks :breaks
-    arcs :arcs
+  [{arcs :arcs
     scan :scan
     events :events
+    edges :edges
     :as vor}
    {x :x y :y :as ev}]
   (let [[l _] (avl/nearest arcs < (assoc ev :query true))
@@ -159,8 +151,10 @@
         new-h-e (edge/new-half-edge (:point arc-above) ev)
         bp-l (:left arc-above)
         bp-r (:right arc-above)
-        new-bp-l (bp/new-break-point (:point arc-above) ev new-h-e :left y nil)
-        new-bp-r (bp/new-break-point ev (:point arc-above) new-h-e :right y (:begin new-bp-l))
+        new-bp-l (bp/new-break-point (:point arc-above) ev new-h-e
+                                     :left y nil)
+        new-bp-r (bp/new-break-point ev (:point arc-above) new-h-e
+                                     :right y (:begin new-bp-l))
         ivl (:is-vertical (:edge new-bp-l))
         ivr (:is-vertical (:edge new-bp-r))
         same-x (close (:x (:begin new-bp-l))
@@ -172,7 +166,10 @@
                    new-bp-r)
         new-vert-bp (if-not new-vertical
                       nil
-                      (bp/new-break-point (:point arc-above) ev new-h-e :vert y nil))
+                      (bp/new-break-point (:point arc-above) ev new-h-e
+                                          :vert y (point/->Point
+                                                   (:x (:begin new-bp-r))
+                                                   -Infinity)))
         event-is-on-vert-line (and (= :vert
                                       (:side (:edge bp-r)))
                                    (close  (:x ev) (:x (:begin (:edge bp-r)))))
@@ -205,17 +202,12 @@
                    (disj evs false-circle)
                    evs)
                  (if ce-r (conj evs ce-r) evs)
-                 (if ce-l (conj evs ce-l) evs))
-        breaks (if new-vertical
-                 (conj! breaks new-vert-bp)
-                 (-> breaks
-                     (conj! new-bp-l)
-                     (conj! new-bp-r)))]
+                 (if ce-l (conj evs ce-l) evs))]
     (-> vor
         (assoc! :scan y)
+        (assoc! :edges edges)
         (assoc! :events events)
-        (assoc! :arcs arcs)
-        (assoc! :breaks breaks))))
+        (assoc! :arcs arcs))))
 
 (defn ^:private handle-first-site-event! [vor ev]
   (let [arcs (assoc (:arcs vor) (arc/new-first-arc ev) nil)]
@@ -291,16 +283,26 @@
              (add-cell-edges cells he i))
       cells)))
 
+(def ^:private arc-break (comp :right first))
+
+(defn get-breaks
+  "returns the break points from a voronoi builder"
+  [vor]
+  (->> (seq (:arcs vor))
+       (map arc-break)
+       (remove nil?)))
+
 (defn ^:private complete-all-breaks!
   "
   Takes a transient vor and finishes all the break points.
   The function assumes that all of the events have been processed.
   "
   [vor]
-  (loop [v vor breaks (seq (persistent! (:breaks vor)))]
+  (loop [v vor breaks (get-breaks vor)]
     (let [{edges :edges
            y :scan} v]
-      (if-not (empty? breaks)
+      (if (empty? breaks)
+        v
         (let [{side :side
                begin :begin
                :as break} (first breaks)
@@ -309,39 +311,45 @@
                is-vertical :is-vertical
                :as edge} (:edge break)
               end (if is-vertical
-                    (point/->Point Infinity (:x (:begin break)))
-                    (if (> m 0)
-                      (condp = side
-                        :left (point/->Point -Infinity -Infinity)
-                        :right (point/->Point Infinity Infinity))
-                      (condp = side
-                        :left (point/->Point -Infinity Infinity)
-                        :right (point/->Point Infinity -Infinity))))
+                    (do
+                      (condp side =
+                        :right (point/->Point (:x (:begin break)) Infinity)
+                        :vert (point/->Point (:x (:begin break)) Infinity)
+                        :left (point/->Point (:x (:begin break)) -Infinity)))
+                    (cond
+                      (> m 0) (condp = side
+                                :left (point/->Point -Infinity -Infinity)
+                                :right (point/->Point Infinity Infinity))
+                      (< m 0) (condp = side
+                                :left (point/->Point -Infinity Infinity)
+                                :right (point/->Point Infinity -Infinity))
+                      (= m 0) (condp = side
+                                :left (point/->Point -Infinity b)
+                                :right (point/->Point Infinity b))))
               complete (edge/new-complete break end)
               edges (conj! edges complete)]
-          (recur (assoc! v :edges edges)
-                 (rest breaks)))
-        (dissoc! v :breaks)))))
+          (recur (assoc! v :edges edges) (rest breaks)))))))
 
-
-
-(defn order-cell [vor site cell]
+(defn order-cell
+  "
+  Takes the edges corresponding to a site and puts them in counter-clockwise
+  order
+  "
+  [vor site cell]
   (let [[xmin xmax ymin ymax :as extent] (:extent vor)
         cell-indices (get (:cells vor) site)
-
         edges (:edges vor)
         ;; we map the completed half-edges for each site to a list of
         ;; indices
         points (->> cell-indices
-               ;; map the indices to the values
+                    ;; map the indices to the values
                     (map #(nth edges %))
                     ;; point the edge in the right direction
+
                     (map (fn [edge]
                            (if (= site (:left edge))
                              [(:p0 edge) (:p1 edge)]
-                             [(:p1 edge) (:p0 edge)])))
-                    ;; remove zero length edges
-                    )
+                             [(:p1 edge) (:p0 edge)]))))
 
         ;; map first to second
         ;; flatten to a list of pairs
@@ -362,6 +370,10 @@
                       (flatten)
                       (apply hash-map))
         ;; otherwise, use use any key because they all connect start-key
+        start-key (if start-key start-key
+                      (if-let [f (first forwards)]
+                        (key f)
+                        nil))
         start-key (if start-key start-key (key (first forwards)))
         ;; hook up the edges in order
         ;; this could definitely be faster
@@ -372,15 +384,14 @@
                 (recur (conj l n))
                 l)))
         cell (->> d
-               (map #(get by-index %))
-               (remove nil?)
-               (map #(nth cell-indices %))
-               (reverse))]
+                  (map #(get by-index %))
+                  (remove nil?)
+                  (map #(nth cell-indices %))
+                  (reverse))]
     (if (and extent
              (not= (count d) (count forwards)))
       ;; decide whether we add one edge or two,
       ;; add 'em
-      ;; (println (count d) (count m) "\n" m "\n" d)
       ;; the deal is we need to see which edges the unlinked points cross
       (let [f (first d)
             l (peek d)
@@ -427,16 +438,19 @@
                                   cell (conj cell i3)
                                   ]
                               (-> vor
-                                  (update :edges conj new-edge1 new-edge2 new-edge3)
+                                  (update :edges conj new-edge1
+                                          new-edge2 new-edge3)
                                   (update :cells assoc site cell))))]
             ;; there are off by one cases and there are off-by 2 cases
             (cond
               ;; corner cases
-              (and (:is-xmin li) (:is-ymax li) (:is-xmax fi) (:is-ymin fi))
+              (and (:is-xmin li) (:is-ymax li)
+                   (:is-xmax fi) (:is-ymin fi))
               (add-two (point/->Point xmax ymax))
-              (and (:is-xmax li) (:is-ymin li) (:is-xmin fi) (:is-ymax fi))
-              ;; two-edge non-corner cases
+              (and (:is-xmax li) (:is-ymin li)
+                   (:is-xmin fi) (:is-ymax fi))
               (add-two (point/->Point xmin ymin))
+              ;; two-edge non-corner cases
               (and (:is-xmin li) (:is-ymin fi))
               (add-two (point/->Point xmin ymin))
               (and (:is-ymin li) (:is-xmax fi))
@@ -447,13 +461,17 @@
               (add-two (point/->Point xmin ymax))
               ;; three edge cases
               (and (:is-xmin li) (:is-xmax fi))
-              (add-three (point/->Point xmin ymin) (point/->Point xmax ymin))
+              (add-three (point/->Point xmin ymin)
+                         (point/->Point xmax ymin))
               (and (:is-ymin li) (:is-ymax fi))
-              (add-three (point/->Point xmax ymin) (point/->Point xmax ymax))
+              (add-three (point/->Point xmax ymin)
+                         (point/->Point xmax ymax))
               (and (:is-xmax li) (:is-xmin fi))
-              (add-three (point/->Point xmax ymax) (point/->Point xmin ymax))
+              (add-three (point/->Point xmax ymax)
+                         (point/->Point xmin ymax))
               (and (:is-ymax li) (:is-ymin fi))
-              (add-three (point/->Point xmin ymax) (point/->Point xmin ymin))
+              (add-three (point/->Point xmin ymax)
+                         (point/->Point xmin ymin))
               :else (do
                       ;; TODO revisit this case
                       (update vor :cells assoc site cell))))))
@@ -462,66 +480,64 @@
 (defn order-cells [vor]
   (reduce-kv order-cell vor (:cells vor)))
 
-
 ;; for each cell, we'll go through and clip any edges which need to be clipped
 ;; the problem with this is an edge may be shared and need to get clipped
 ;; maybe we can do this as a breadth first search algorithm
-
-(defn clip-point [[xl xg yl yg] {{m :m b :b} :edge
-                                 :as c} pk]
-  )
 
 (defn clip-one-side
   "
   Clips the completed edge to the extent boundary
   For now defer adding edges
   "
-  [{{m :m b :b} :edge
-    :as c}
+  [{{m :m b :b} :edge :as c}
    [xmin xmax ymin ymax]
-   left]
-  (let [pk (if left :p0 :p1)
-        ok (if left :p1 :p0)
-        p (pk c)
-        o (ok c)
-        g (> (:x p) (:x o))
-        xv (if g xmax xmin)
-        clip-y (+ (* m xv) b)
+   is-left?]
+  (let [pk (if is-left? :p0 :p1)
+        ok (if is-left? :p1 :p0)
+        {px :x :as p} (pk c)
+        {ox :x :as o} (ok c)
+        x (cond
+            (> px ox) xmax
+            (= px ox) px
+            :else     xmin)
+        clip-y (if (= px x)
+                 (if (> (:y p) ymax) ymax ymin)
+                 (+ (* m x) b))
         [x y] (cond
                 (> clip-y ymax) [(/ (- ymax b) m) ymax]
                 (< clip-y ymin) [(/ (- ymin b) m) ymin]
-                :else [xv clip-y])]
+                :else [x clip-y])]
     (assoc c pk (point/->Point x y))))
 
-(defn clip-cells
-  [{cells :cells
-    edges :edges
+(defn clip-edge
+  [extent {p0 :p0 p1 :p1 :as c}]
+  (let [zone0 (extent-zone extent p0)
+        zone1 (extent-zone extent p1)
+        in0 (not-any? true? zone0)
+        in1 (not-any? true? zone1)]
+    (cond
+      (and in0 in1) c
+      (not= in0 in1) (clip-one-side c extent in1)
+      (some true? ;; can't intersect'
+            (map #(and %1 %2) zone0 zone1)) nil
+      :else (-> c
+                (clip-one-side extent true)
+                (clip-one-side extent false)))))
+
+(defn clip-edges
+  [{edges :edges
     extent :extent
     :as vor}]
   (if extent
     (->> edges
-         (map (fn [{p0 :p0 p1 :p1 :as c}]
-                (let [zone0 (extent-zone extent p0)
-                      zone1 (extent-zone extent p1)
-                      in0 (not-any? true? zone0)
-                      in1 (not-any? true? zone1)]
-                  (cond
-                    (and in0 in1) c
-                    (not= in0 in1) (clip-one-side c extent in1)
-                    ;; case where they cannot intersect the inside
-                    (some true? (map #(and %1 %2) zone0 zone1)) nil
-
-                    :else (let [cc (-> c
-                                       (clip-one-side extent true)
-                                       (clip-one-side extent false))]
-                            cc)))))
+         (map #(clip-edge extent %))
          (remove nil?)
          (into []))
-    vor))
+    edges))
 
 (defn build-cells [vor]
   (as-> vor v
-    (assoc v :edges (clip-cells v))
+    (assoc v :edges (clip-edges v))
     (assoc v :cells (make-cells v))
     (order-cells v)))
 

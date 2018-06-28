@@ -95,7 +95,6 @@
             c [:g
                (doall
                 (map-indexed
-
                  (fn [i c]
                    (let [{{bx :x by :y} :begin
                           {ex :x ey :y} :end} c
@@ -121,17 +120,21 @@
                                              "red"
                                              "cyan")})))
 
+
+
 (defn draw-breaks [breaks y]
   [:g
    (map-indexed
-    (fn [i bp] ^{:key i} [draw-break bp y i])
+    (fn [i bp]
+      ^{:key i} [draw-break bp y i])
     breaks)])
 
 (defn draw-sweep-state [voronoi xmin xmax]
   (fn []
     (let [{y :scan
-           arcs :arcs
-           breaks :breaks} @voronoi]
+            arcs :arcs
+           :as v} @voronoi
+          breaks (vor/get-breaks v)]
       [:g
        [draw-sweep-line y xmin xmax]
        [draw-parabolas arcs y xmin xmax]
