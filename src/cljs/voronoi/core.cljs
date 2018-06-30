@@ -15,7 +15,7 @@
 (defonce app-state (atom {:animation-page nil
                           :misc nil
                           :map-page {:outline nil
-                                     :states nil}}))
+                                     :data nil}}))
 
 
 
@@ -35,7 +35,11 @@
 (defonce map-page-cursor
   (reagent/cursor app-state [:map-page :states]))
 
+(defonce map-data-cursor
+  (reagent/cursor app-state [:map-page :data]))
+
 (components/get-map map-page-cursor)
+(components/get-data map-data-cursor)
 
 (defonce animation-playground-page
   #(components/animation-playground
@@ -46,7 +50,7 @@
     (reagent/cursor app-state [:misc])))
 
 (defonce map-page
-  #(components/map-thing map-page-cursor))
+  #(components/map-thing map-page-cursor map-data-cursor))
 
 (secretary/defroute map-p #"/map" []
   (reset! page #'map-page))

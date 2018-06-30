@@ -5,10 +5,10 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/data.avl "0.0.17"]
                  [org.clojure/clojurescript "1.10.312"
                   :scope "provided"]
-                 [org.clojure/data.csv "0.1.4"]
+                 [org.clojure/data.avl "0.0.17"]
+                 [testdouble/clojurescript.csv "0.3.0"]
                  [ring-server "0.5.0"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.1"]
@@ -23,6 +23,7 @@
                  [cljsjs/topojson "1.6.18-0"]
                  [cljsjs/d3geo "0.2.15-2"]
                  [cljsjs/d3 "4.12.0-0"]
+                 [cljsjs/csv "1.1.1-0"]
                  [ring/ring-defaults "0.3.1"]
                  [cljs-http "0.1.45"]]
 
