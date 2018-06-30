@@ -1,15 +1,76 @@
 (ns voronoi.components
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.voronoi :as vor]
             [voronoi.points :as points]
             [voronoi.components.arc-table :refer [arc-table-and-toggle]]
-            [voronoi.components.svg :refer [voronoi-svg interactive-svg]]
+            [voronoi.components.svg :refer [voronoi-svg interactive-svg voronoi-group]]
             [voronoi.components.events-panel :refer [events-panel]]
-            [voronoi.components.control-panel :refer [control-panel]]))
+            [voronoi.components.control-panel :refer [control-panel]]
+            [cljs-http.client :as http]
+            [cljs.core.async :refer [<!]]
+            [cljsjs.topojson :as topojson]
+            [cljsjs.d3] ))
 
 (defonce initial-points points/some-cool-stuff)
 
+(defn get-map [db]
+  (go (let [response (<! (http/get "assets/gz_2010_us_040_00_500k.json"
+                                   {:with-credentials? false}))]
+        (let [u (clj->js (:body response))]
+          (reset! db u)))))
+
 (enable-console-print!)
+
+(def albers-usa (js/d3.geoAlbersUsa))
+
+(defn place [city state lat-lon pop]
+  {:city city
+   :state state
+   :loc lat-lon
+   :pop pop})
+
+(def places
+  [(place "Norfolk" "VA" [-76.2859, 36.8508] 245115)
+   (place "New York" "NY" [-74.0060 40.7128] 8538000)
+   (place "Houston" "TX"   [-95.3698 29.7604] 2303000)
+   (place "San Francisco" "CA" [-122.4194 37.7759] 870887)
+   (place "Chicago" "IL" [-87.6298 41.9791] 2705000)
+   (place "Miami" "FL" [-80.1918 25.7617] 453579)]
+  )
+
+(def place-points
+  (map #(albers-usa (clj->js (:loc %))) places))
+
+(defn map-thing [map-c]
+  (let [p (js/d3.geoPath albers-usa)]
+    (fn []
+      (if-let [m @map-c]
+        (let [us (->> (.-features m)
+                      (remove #(or (=  "Alaska" (.-NAME (.-properties %)))
+                                   (=  "Hawaii" (.-NAME (.-properties %)))))
+                      (map (fn [f]
+                             ^{:key (.-NAME (.-properties f))}
+                             [:path {:d (p f)}])))
+              p (map (fn [[x y]] {:x x :y y}) place-points)
+              pp (into [] p)
+              v (vor/new-voronoi pp :extent [0 1000 0 1000])
+              vv (vor/finish v)]
+          [:svg {:style {:width "960px"
+                         :height "900px"
+                         :stroke "#aaa"
+                         :stroke-width 0.5
+                         :fill "none"}}
+           [:defs
+            [:clipPath {:id "ko"} us]]
+           [:g {:clip-path "url(#ko)"}
+            [voronoi-group (atom vv)]]
+           [:g {:id "usa"}
+            us]
+           [:g {:id "points"}
+            (for [[x y :as p] place-points]
+              ^{:key p} [:circle {:cx x :cy y :r 1 :fill "black"}])]])))))
+
 (defn new-app-thing [db id]
   (swap! db #(if % % {:voronoi (vor/new-voronoi [{:x 50 :y 25}
                                                  {:x 100 :y 25}]

@@ -13,7 +13,12 @@
 ;; State
 
 (defonce app-state (atom {:animation-page nil
-                          :misc nil}))
+                          :misc nil
+                          :map-page {:outline nil
+                                     :states nil}}))
+
+
+
 
 
 (secretary/set-config! :prefix "#")
@@ -27,6 +32,11 @@
 (defn current-page []
   [:div [@page]])
 
+(defonce map-page-cursor
+  (reagent/cursor app-state [:map-page :states]))
+
+(components/get-map map-page-cursor)
+
 (defonce animation-playground-page
   #(components/animation-playground
     (reagent/cursor app-state [:animation-page])))
@@ -34,6 +44,12 @@
 (defonce misc-page
   #(components/misc
     (reagent/cursor app-state [:misc])))
+
+(defonce map-page
+  #(components/map-thing map-page-cursor))
+
+(secretary/defroute map-p #"/map" []
+  (reset! page #'map-page))
 
 (secretary/defroute intro-p #"/(intro)?" []
   (reset! page #'components/intro))

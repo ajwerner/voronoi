@@ -6,20 +6,25 @@
 
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/data.avl "0.0.17"]
+                 [org.clojure/clojurescript "1.10.312"
+                  :scope "provided"]
+                 [org.clojure/data.csv "0.1.4"]
                  [ring-server "0.5.0"]
                  [reagent "0.8.1"]
                  [reagent-utils "0.3.1"]
                  [ring "1.6.3"]
-                 [ring/ring-defaults "0.3.1"]
-                 [compojure "1.6.1"]
-                 [hiccup "1.0.5"]
-                 [yogthos/config "1.1.1"]
-                 [org.clojure/clojurescript "1.10.312"
-                  :scope "provided"]
                  [secretary "1.2.3"]
                  [criterium "0.4.4"]
                  [venantius/accountant "0.2.4"
-                  :exclusions [org.clojure/tools.reader]]]
+                  :exclusions [org.clojure/tools.reader]]
+                 [compojure "1.6.1"]
+                 [hiccup "1.0.5"]
+                 [yogthos/config "1.1.1"]
+                 [cljsjs/topojson "1.6.18-0"]
+                 [cljsjs/d3geo "0.2.15-2"]
+                 [cljsjs/d3 "4.12.0-0"]
+                 [ring/ring-defaults "0.3.1"]
+                 [cljs-http "0.1.45"]]
 
   :plugins [[lein-environ "1.1.0"]
             [lein-cljsbuild "1.1.7"]
@@ -52,7 +57,7 @@
              :compiler {:output-to "resources/public/js/testable.js"
                         :main voronoi.runner
                         :optimizations :advanced
-                        :npm-deps {:topojson "3.0.2"}
+                        :npm-deps {:topojson-client "3.0."}
                         :install-deps true}}
             :min
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
@@ -107,8 +112,6 @@
    :css-dirs ["resources/public/css"]
    :ring-handler voronoi.handler/app
    :repl-eval-timeout 100000}
-
-
   :profiles {:dev {:repl-options {:init-ns voronoi.repl
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 

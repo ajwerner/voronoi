@@ -217,21 +217,24 @@
           [draw-complete-half-edges edges-cursor]
           [draw-sweep-state voronoi (- x x-width) (+ x x-width x-width)]]]))))
 
+(defn voronoi-group
+  [voronoi]
+  (let [points-cursor (reagent/cursor voronoi [:points])
+        edges-cursor (reagent/cursor voronoi [:edges])]
+    [:g
+     [draw-polygons voronoi]
+     [draw-points points-cursor]
+     [draw-complete-half-edges edges-cursor]]))
+
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
   [voronoi]
-  (let [points-cursor (reagent/cursor voronoi [:points])
-        edges-cursor (reagent/cursor voronoi [:edges])
-        extent (reagent/cursor voronoi [:extent])
+  (let [extent (reagent/cursor voronoi [:extent])
         [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)]
     [:div
      [:svg {
             :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
             :preserveAspectRatio "xMaxYMax meet"}
       [draw-extent extent]
-      [draw-polygons voronoi]
-      [draw-points points-cursor]
-      [draw-complete-half-edges edges-cursor]
-      ;;[draw-sweep-state voronoi -1000 1000]
-      ]]))
+      [voronoi-group voronoi]]]))
