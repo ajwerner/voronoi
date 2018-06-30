@@ -11,16 +11,17 @@
             [cljs-http.client :as http]
             [cljs.core.async :refer [<!]]
             [cljsjs.topojson :as topojson]
-            [cljsjs.d3]
-            ))
+            [re-com.core :as r]
+            [cljsjs.d3]))
 
 (defonce initial-points points/some-cool-stuff)
 
 (defn get-map [db]
-  (go (let [response (<! (http/get "assets/gz_2010_us_040_00_500k.json"
-                                   {:with-credentials? false}))]
-        (let [u (clj->js (:body response))]
-          (reset! db u)))))
+  (go
+    (let [response (<! (http/get "assets/gz_2010_us_040_00_500k.json"
+                                 {:with-credentials? false}))
+          u  (:body response)]
+      (reset! db u))))
 
 (def year-re #"[0-9]{4}")
 
@@ -54,56 +55,100 @@
 (def ak-hi-abrevs
   #{"AK" "HI"})
 
+(defn map-svg [us vor]
+  [:svg {:style {:width "960px"
+                 :height "500px"
+                 :stroke "#aaa"
+                 :stroke-width 0.5
+                 :fill "none"}}
+   [:defs
+    [:clipPath {:id "ko"} us]]
+   [:g {:clip-path "url(#ko)"}
+    [voronoi-group vor]]
+   [:g {:id "usa"}
+    us]])
+
 (defn map-comp [m point-data]
-  (let [p (js/d3.geoPath albers-usa)
-        us (->> (.-features m)
-                (remove #(ak-hi-names (.-NAME (.-properties %))))
+  (let [path (js/d3.geoPath albers-usa)
+        us (->> (:features m)
+                (remove #(ak-hi-names (:NAME (:properties %))))
                 (map (fn [f]
-                       ^{:key (.-NAME (.-properties f))}
-                       [:path {:d (p f)}])))
-        k :1950
-        n 30
-        p (->> point-data
-               (remove #(ak-hi-abrevs (:ST %)))
-               (remove #(nil? (k %)))
-               (sort-by k >)
-               (take n)
-               (map (fn [{lat :LAT_BING
-                          lon :LON_BING :as data}]
-                      (let [[x y] (albers-usa (clj->js [lon lat]))]
-                        {:x x :y y :p data}))))
-        pp (into [] p)
-        v (vor/new-voronoi pp :extent [0 1000 0 1000])
-        vv (vor/finish v)]
-    [:svg {:style {:width "960px"
-                   :height "900px"
-                   :stroke "#aaa"
-                   :stroke-width 0.5
-                   :fill "none"}}
-     [:defs
-      [:clipPath {:id "ko"} us]]
-     [:g {:clip-path "url(#ko)"}
-      [voronoi-group (atom vv)]]
-     [:g {:id "usa"}
-      us]
-     [:g {:id "points"}
-      (for [{x :x y :y :as p} p]
-        ^{:key p} [:circle {:cx x :cy y :r 1 :fill "black"}])]]))
+                       ^{:key (:NAME (:properties f))}
+                       [:path {:d (path (clj->js f))}])))
+        make-vor (fn [n k]
+                   (let [p (->> point-data
+                                (remove #(ak-hi-abrevs (:ST %)))
+                                (remove #(nil? (k %)))
+                                (sort-by k >)
+                                (take n)
+                                (map (fn [{lat :LAT_BING
+                                           lon :LON_BING :as data}]
+                                       (let [[x y] (albers-usa (clj->js [lon lat]))]
+                                         {:x x :y y :p data}))))]
+                     (-> p
+                         (vor/new-voronoi :extent [0 1000 0 1000])
+                         (vor/finish))))
+        set-nk (fn [v n k]
+                 (-> v
+                     (assoc :n n)
+                     (assoc :k k)
+                     (assoc :vor (make-vor n k))))
+        set-n (fn [{k :k :as v} n]
+                (set-nk v n k))
+        set-k (fn [{n :n :as v} k]
+                (set-nk v n k))
+        state (atom (set-nk {} 20 :2010))
+        n-c (reagent/cursor state [:n])
+        k-c (reagent/cursor state [:k])
+        vor-c (reagent/cursor state [:vor])
+        update-n (fn [n] (swap! state set-n n))
+        update-k (fn [kn]
+                   (let [k (keyword (str kn))]
+                     (swap! state set-k k)))]
+    (fn []
+      (let [k (int (name @k-c))
+            n @n-c]
+        [:div
+         [map-svg us vor-c]
+         [r/v-box
+          :children
+          [[r/h-box
+            :align :start
+            :children
+            [[r/box :width "50px" :child [r/title :level :level3 :label "Year"]]
+             [r/box :width "50px" :child (str k)]
+             [r/box
+              :child [r/slider
+                      :model k
+                      :min 1790
+                      :max 2010
+                      :step 10
+                      :on-change update-k]]
+             ]]
+           [r/h-box
+            :children
+            [[r/box :width "50px" :child [r/title :level :level3 :label "Top"]]
+             [r/box :width "50px" :child (str n)]
+             [r/box :size "auto"
+              :child [r/slider
+                      :model n
+                      :min 3
+                      :max 100
+                      :on-change update-n]]]]]]] ))))
 
 (defn map-thing [map-c data-c]
-
   (fn []
     (let [m @map-c
           d @data-c]
       (if (and m d)
-        (map-comp m d)
-        [:div])
-      )))
+        [:div
+         [map-comp m d]
+         [:a {:href "#/misc"} "More Examples ->"]]
+        [:div
+         [:a {:href "#/misc"} "More Examples ->"]]))))
 
 (defn new-app-thing [db id]
-  (swap! db #(if % % {:voronoi (vor/new-voronoi [{:x 50 :y 25}
-                                                 {:x 100 :y 25}]
-                                                :extent [0 150 0 50])
+  (swap! db #(if % % {:voronoi (vor/new-voronoi initial-points)
                       :id id
                       :scroll nil}))
   (let [vor (reagent/cursor db [:voronoi])
@@ -185,6 +230,8 @@
         (for [k (keys @db)]
           [:div {:id k} ^{:key k} [voronoi-svg (reagent/cursor db [k])]]))
        [:div.links
+        [:a {:href "#/map"} "<- Map"]
+        [:br]
         [:a {:href "#/intro"} "Tell me more ->"]]])))
 
 (defn intro []
@@ -205,11 +252,11 @@
       " Any seemingly deep insight was much more deeply pursued by somebody else."
       " I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]
    [:div
-    [:a {:href "#/animation-playground"} "voronoi diagrams ->"]
+    [:a {:href "#/misc"} "<- Examples"]
     [:br]
-    [:a {:href "#/misc"} "misc <-"]
+    [:a {:href "#/animation-playground"} "Interactive playground ->"]
     [:br]
-    [:a {:href "#/voronoi-diagrams"} "about diagrams"]]])
+    [:a {:href "#/voronoi-diagrams"} "About Diagrams ->"]]])
 
 (defn voronoi-diagrams []
   [:div
@@ -224,4 +271,6 @@
      "A common use case for these diagrams are to create tooltips for graphs"
      "Efficient algorithms exist to find which polygon in a set contain some point"
      "(See point containment search, these are actually easy to make much faster when you can ensure that the polygons do not overlap)"
-     "See BSP trees"]]])
+     "See BSP trees"]
+    [:div
+     [:a {:href "#/intro"} "<- Intro"]]]])

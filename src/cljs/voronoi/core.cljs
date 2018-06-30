@@ -17,10 +17,6 @@
                           :map-page {:outline nil
                                      :data nil}}))
 
-
-
-
-
 (secretary/set-config! :prefix "#")
 
 ;; -------------------------
