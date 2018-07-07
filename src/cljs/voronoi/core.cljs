@@ -1,6 +1,7 @@
 (ns voronoi.core
   (:require [clojure.string :as str]
             [reagent.core :as reagent :refer [atom]]
+            [re-frame.core :as rf]
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
             [voronoi.voronoi :as vor]
@@ -10,6 +11,25 @@
             [voronoi.routes :as routes]))
 
 ;; -------------------------
+;; Routing
+
+(secretary/defroute map-p #"/map" []
+  (rf/dispatch [:page :map]))
+
+(secretary/defroute intro-p #"/(intro)?" []
+  (rf/dispatch [:page :intro]))
+
+(secretary/defroute misc-p "/misc" []
+  (rf/dispatch [:page :tests]))
+
+(secretary/defroute animation-page "/animation-playground" []
+  (rf/dispatch [:page :playground]))
+
+(secretary/defroute voronoi-description "/voronoi-diagrams" []
+  (rf/dispatch [:page :voronoi-diagrams-intro]))
+
+
+;; -------------------------
 ;; State
 
 (defonce app-state (atom {:animation-page nil
@@ -17,57 +37,86 @@
                           :map-page {:outline nil
                                      :data nil}}))
 
+;; -------------------------
+;; Event handlers
+
+(rf/reg-event-fx
+ :initialize
+ (fn [{}  _]
+   {:db {:page :intro
+         :animation-page nil
+         :misc nil
+         :map-page {:outline nil
+                    :data nil}}
+    :load-all-test-data nil}))
+
+(rf/reg-event-fx
+  :ev-load-test-data
+  (fn [coeffects [_ test]]
+    (assoc coeffects :load-test-data test)))
+
+(rf/reg-fx
+ :load-all-test-data
+ (fn [fx _]
+   (for [test components/misc-state]
+     (rf/dispatch [:ev-load-test-data test]))
+   fx))
+
+(rf/reg-event-db
+  :loaded-test-data
+  (fn [db [_ id vor]]
+    (update db :test-data
+            #(if % (assoc % id vor) {id vor}))))
+
+(rf/reg-fx
+  :load-test-data
+  (fn [_ [_ {id :id points :points extent :extent}]]
+    (rf/dispatch [:loaded-test-data id (vor/finish (vor/new-voronoi points :extent extent))])))
+
+(rf/reg-event-db
+ :page
+ (fn [db [_ new-page]]
+   (assoc db :page new-page)))
+
+(rf/reg-sub
+ :current-page
+ (fn [db _] (:page db)))
+
 (secretary/set-config! :prefix "#")
 
 ;; -------------------------
 ;; Views
 ;; -------------------------
 
-(defonce page (atom #'components/intro))
-
-(defn current-page []
-  [:div [@page]])
-
-(defonce map-page-cursor
-  (reagent/cursor app-state [:map-page :states]))
-
-(defonce map-data-cursor
-  (reagent/cursor app-state [:map-page :data]))
-
-(components/get-map map-page-cursor)
-(components/get-data map-data-cursor)
-
-(defonce animation-playground-page
-  #(components/animation-playground
-    (reagent/cursor app-state [:animation-page])))
+(reagent/cursor app-state [:animation-page])
 
 (defonce misc-page
   #(components/misc
     (reagent/cursor app-state [:misc])))
 
 (defonce map-page
-  #(components/map-thing map-page-cursor map-data-cursor))
+  #(components/map-thing))
 
-(secretary/defroute map-p #"/map" []
-  (reset! page #'map-page))
+(defonce animation-playground-page
+  #(components/animation-playground
+    (reagent/cursor app-state [:animation-page])))
 
-(secretary/defroute intro-p #"/(intro)?" []
-  (reset! page #'components/intro))
+(def routes
+  {:intro #'components/intro
+   :voronoi-diagrams-intro #'components/voronoi-diagrams
+   :tests #'misc-page
+   :playground #'animation-playground-page
+   :map #'map-page})
 
-(secretary/defroute misc-p "/misc" []
-  (reset! page #'misc-page))
-
-(secretary/defroute animation-page "/animation-playground" []
-  (reset! page #'animation-playground-page))
-
-(secretary/defroute voronoi-description "/voronoi-diagrams" []
-  (reset! page #'components/voronoi-diagrams))
+(defn ui []
+  [:div.container
+   [(@(rf/subscribe [:current-page]) routes)]])
 
 ;; -------------------------
 ;; Initialize app
 
 (defn mount-root []
-  (reagent/render [current-page] (.getElementById js/document "app")))
+  (reagent/render [ui] (.getElementById js/document "app")))
 
 (defn init! []
   (accountant/configure-navigation!
@@ -80,6 +129,9 @@
      (fn [path]
        (secretary/locate-route path))})
   (accountant/dispatch-current!)
+  (rf/dispatch-sync [:initialize])
+  (rf/dispatch [:get-city-data])
+  (rf/dispatch [:get-map-data])
   (mount-root))
 
 (defn ^:export main [] (init!))

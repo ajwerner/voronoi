@@ -25,8 +25,11 @@
                  [cljsjs/d3geo "0.2.15-2"]
                  [cljsjs/d3 "4.12.0-0"]
                  [cljsjs/csv "1.1.1-0"]
+                 [day8.re-frame/http-fx "0.1.6"]
+                 [cljs-ajax "0.7.3"]
                  [ring/ring-defaults "0.3.1"]
-                 [cljs-http "0.1.45"]]
+                 [cljs-http "0.1.45"]
+                 [re-frame "0.10.5"]]
 
   :plugins [[lein-environ "1.1.0"]
             [lein-cljsbuild "1.1.7"]
@@ -121,6 +124,8 @@
                                   [ring/ring-mock "0.3.2"]
                                   [ring/ring-devel "1.6.3"]
                                   [prone "1.5.2"]
+                                  [org.clojure/clojurescript "1.10.339"]
+                                  [org.clojure/core.async "0.4.474"]
                                   [figwheel-sidecar "0.5.16"]
                                   [org.clojure/tools.nrepl "0.2.13"]
                                   [com.cemerick/piggieback "0.2.2"]
@@ -128,6 +133,7 @@
 
                    :source-paths ["env/dev/clj"]
                    :plugins [[lein-figwheel "0.5.16"]
+                             [lein-cljsbuild "1.1.7"]
                              [lein-doo "0.1.10"]]
                    :injections [(require 'pjstadig.humane-test-output)
                                 (pjstadig.humane-test-output/activate!)]

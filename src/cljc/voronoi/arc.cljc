@@ -6,7 +6,7 @@
                      x-ordered-comparator
                      ccw midpoint]]
             [voronoi.edge :refer [intersect-edges]]
-            [voronoi.break-point :as bp :refer [ break-point-point]]))
+            [voronoi.break-point :as bp :refer [break-point-point]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Arcs
@@ -31,29 +31,17 @@
 (defrecord Arc [point left right added-at]
   ArcComparable
   (left-x [this sweep-y]
-    (if (nil? left)
-      -Infinity
-      (bp/point-x (:pp left) sweep-y)))
+    (if (nil? left) -Infinity (bp/point-x (:pp left) sweep-y)))
   (right-x [this sweep-y]
-    (if (nil? right)
-      Infinity
-      (bp/point-x (:pp right) sweep-y)))
+    (if (nil? right) Infinity (bp/point-x (:pp right) sweep-y)))
   (left-y [this sweep-y x]
-    (if (nil? left)
-      -Infinity
-      (bp/point-y (:pp left) sweep-y x)))
+    (if (nil? left) -Infinity (bp/point-y (:pp left) sweep-y x)))
   (right-y [this sweep-y x]
-    (if (nil? right)
-      -Infinity
-      (bp/point-y (:pp right) sweep-y x)))
+    (if (nil? right) -Infinity (bp/point-y (:pp right) sweep-y x)))
   (left-bound [this sweep-y]
-    (if (nil? left)
-      nil-left-bound-point
-      (break-point-point left sweep-y)))
+    (if (nil? left) nil-left-bound-point (break-point-point left sweep-y)))
   (right-bound [this sweep-y]
-    (if (nil? right)
-      nil-right-bound-point
-      (break-point-point right sweep-y))))
+    (if (nil? right) nil-right-bound-point (break-point-point right sweep-y))))
 
 (defn new-first-arc [point]
   (->Arc point nil nil (:y point)))
@@ -82,8 +70,8 @@
                  (not (close nqlx qx))
                  (let [nqrx (right-x nq y)]
                    (or
-                    (< nqrx qx)
-                    (close nqrx qx))))]
+                     (< nqrx qx)
+                     (close nqrx qx))))]
     ret))
 
 (defn arcs-comparator
@@ -106,9 +94,8 @@
                   (let [al (left-bound a y)
                         bl (left-bound b y)
                         aCcw (ccw (update al :y + 1000) al (:point a))
-                        bCcw (ccw (update bl :y + 1000) bl (:point  b))
-                        oCcw (ccw (:point a) al (:point b))
-                        ccwv (ccw (:point a) (:point b) al)]
+                        bCcw (ccw (update bl :y + 1000) bl (:point b))
+                        oCcw (ccw (:point a) al (:point b))]
                     (if (and (not= aCcw bCcw)
                              (not= aCcw 0)
                              (not= bCcw 0))
@@ -120,7 +107,7 @@
                              (some? (:left a))) 1
                         (not= 0 oCcw) oCcw
                         :else (x-ordered-comparator
-                               (:point a) (:point b)))))
+                                (:point a) (:point b)))))
                   :else (let [al (left-bound a y)
                               bl (left-bound b y)
                               ar (right-bound a y)
