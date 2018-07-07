@@ -6,7 +6,8 @@
             [voronoi.point :as point]
             [clojure.string :as string]
             [voronoi.points :as points]
-            [reagent.core :as reagent]))
+            [reagent.core :as reagent]
+            [re-frame.core :as rf]))
 
 (defn parabola-point-y [foc dir x]
   (let [a (:x foc)
@@ -50,15 +51,17 @@
                           (draw-parabola (:point arc) y xmin xmax))))]
       (into [:g] (remove nil? parabolas)))))
 
-(defn draw-points [points-cursor]
-  (fn []
-    [:g
-     (doall
-      (map-indexed
+(defn draw-points-im [points]
+  [:g
+   (doall
+     (map-indexed
        (fn [i {x :x y :y :as p}]
          ^{:key i} [:circle {:cx x :cy y :r 1 :stroke-width .1 :stroke "black" :fill "black"}])
-       @points-cursor))]))
+       points))])
 
+(defn draw-points [points-cursor]
+  (fn []
+    (draw-points-im @points-cursor)))
 
 (defn line [x1 y1 x2 y2 attrs]
   [:line (into attrs {:x1 x1 :y1 y1 :x2 x2 :y2 y2 :stroke-width .3})])
@@ -140,20 +143,19 @@
        [draw-parabolas arcs y xmin xmax]
        [draw-breaks breaks y]])))
 
+(defn draw-polygons-im [vor]
+  (if-let [p (vor/polygons vor)]
+    [:g.finished
+     (map-indexed
+       (fn [i {points :cell site :site}]
+         (let [points-str
+               (string/join " " (map #(str (:x %) "," (:y %)) points))]
+           ^{:key i} [:polygon {:points points-str :on-mouse-over #(rf/dispatch [:polygon-over site])}]))
+       (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)) p))]))
+
 (defn draw-polygons [vor-cursor]
   (fn []
-    (if-let [p (vor/polygons @vor-cursor)]
-      [:g.finished
-       (map-indexed
-        (fn [i points]
-          (let [points-str
-                (string/join " " (map #(str (:x %) "," (:y %)) points))
-                {fx :x fy :y} (first points)
-                ]
-            ^{:key i} [:polygon {:points points-str}]
-
-            ))
-        (remove #(some (fn [{x :x}] (is-infinite? x)) %) p))])))
+    (draw-polygons-im @vor-cursor)))
 
 (defn draw-extent [extent-cursor]
   (fn []
@@ -164,7 +166,7 @@
          ^{:key 0} (line xmin ymin xmax ymin {:stroke "black"})
          ^{:key 1} (line xmin ymin xmin ymax {:stroke "black"})
          ^{:key 2} (line xmin ymax xmax ymax {:stroke "black"})
-         ^{:key 2} (line xmax ymin xmax ymax {:stroke "black"})]))))
+         ^{:key 3} (line xmax ymin xmax ymax {:stroke "black"})]))))
 
 (defn interactive-svg [voronoi scroll]
   (let [scroll-cursor (swap! scroll #(if % % {:x -80
@@ -226,15 +228,23 @@
      [draw-points points-cursor]
      [draw-complete-half-edges edges-cursor]]))
 
+(defn voronoi-group-im
+  [voronoi]
+  (let [v @voronoi]
+    [:g
+     [draw-polygons-im v]
+     [draw-points-im (:points v)]]))
+
 (defn voronoi-svg
   "draws an svg
   expects a ratom for a voronoi diagram"
   [voronoi]
   (let [extent (reagent/cursor voronoi [:extent])
         [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)]
-    [:div
-     [:svg {
-            :view-box (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
-            :preserveAspectRatio "xMaxYMax meet"}
-      [draw-extent extent]
-      [voronoi-group voronoi]]]))
+    [:svg {:view-box            (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
+           :preserveAspectRatio "xMidYMid meet"
+           :style {:max-height "100%"
+                   :width "100%"
+                   }}
+     [draw-extent extent]
+     [voronoi-group voronoi]]))

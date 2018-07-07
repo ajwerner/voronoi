@@ -86,12 +86,12 @@
               :pseudo-names true
               :verbose true
               :closure-warnings
-
               {:check-types :warning ;; << ADD THIS
                :check-variables :warning
                :undefined-names :off
                :externs-validation :off
                :missing-properties :off}
+
               :npm-deps {:topojson "3.0.2"}
               :install-deps true}}
             :app
@@ -106,7 +106,9 @@
               :optimizations :none
               :pretty-print  true
               :npm-deps {:topojson "3.0.2"}
-              :install-deps true}}}
+              :install-deps true
+              :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
+              }}}
    }
 
   :figwheel
@@ -129,7 +131,8 @@
                                   [figwheel-sidecar "0.5.16"]
                                   [org.clojure/tools.nrepl "0.2.13"]
                                   [com.cemerick/piggieback "0.2.2"]
-                                  [pjstadig/humane-test-output "0.8.3"] ]
+                                  [pjstadig/humane-test-output "0.8.3"]
+                                  [day8.re-frame/re-frame-10x "0.3.3-react16"]]
 
                    :source-paths ["env/dev/clj"]
                    :plugins [[lein-figwheel "0.5.16"]

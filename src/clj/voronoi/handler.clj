@@ -18,7 +18,8 @@
    [:meta {:name "viewport"
            :content "width=device-width, initial-scale=1"}]
    (include-css (if (env :dev) "/css/site.css" "/css/site.min.css")
-                (if (env :dev) "/css/re-com.css" "/css/re-com.min.css"))])
+                (if (env :dev) "/css/re-com.css" "/css/re-com.min.css")
+                "//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.css")])
 
 (defn loading-page []
   (html5

@@ -561,5 +561,6 @@
 
 (defn polygons [{extent :extent edges :edges cells :cells}]
   (if extent
-    (map (fn [[site cell]] (cell-to-polygon site cell edges))
+    (map (fn [[site cell]] {:cell (cell-to-polygon site cell edges)
+                            :site site})
          cells)))

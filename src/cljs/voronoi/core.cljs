@@ -8,15 +8,17 @@
             [voronoi.control :refer [reset-state!]]
             [voronoi.points :as p]
             [voronoi.components :as components]
+            [voronoi.components.us-map :as us-map]
+            [voronoi.components.examples :as examples]
             [voronoi.routes :as routes]))
 
 ;; -------------------------
 ;; Routing
 
-(secretary/defroute map-p #"/map" []
+(secretary/defroute map-p #"/(map)?" []
   (rf/dispatch [:page :map]))
 
-(secretary/defroute intro-p #"/(intro)?" []
+(secretary/defroute intro-p #"/intro" []
   (rf/dispatch [:page :intro]))
 
 (secretary/defroute misc-p "/misc" []
@@ -42,36 +44,9 @@
 
 (rf/reg-event-fx
  :initialize
- (fn [{}  _]
-   {:db {:page :intro
-         :animation-page nil
-         :misc nil
-         :map-page {:outline nil
-                    :data nil}}
-    :load-all-test-data nil}))
+ (fn [db  _]
+   db))
 
-(rf/reg-event-fx
-  :ev-load-test-data
-  (fn [coeffects [_ test]]
-    (assoc coeffects :load-test-data test)))
-
-(rf/reg-fx
- :load-all-test-data
- (fn [fx _]
-   (for [test components/misc-state]
-     (rf/dispatch [:ev-load-test-data test]))
-   fx))
-
-(rf/reg-event-db
-  :loaded-test-data
-  (fn [db [_ id vor]]
-    (update db :test-data
-            #(if % (assoc % id vor) {id vor}))))
-
-(rf/reg-fx
-  :load-test-data
-  (fn [_ [_ {id :id points :points extent :extent}]]
-    (rf/dispatch [:loaded-test-data id (vor/finish (vor/new-voronoi points :extent extent))])))
 
 (rf/reg-event-db
  :page
@@ -95,7 +70,7 @@
     (reagent/cursor app-state [:misc])))
 
 (defonce map-page
-  #(components/map-thing))
+  #(us-map/map-thing))
 
 (defonce animation-playground-page
   #(components/animation-playground
@@ -110,7 +85,8 @@
 
 (defn ui []
   [:div.container
-   [(@(rf/subscribe [:current-page]) routes)]])
+   (if-let [p @(rf/subscribe [:current-page])]
+     [(p routes)])])
 
 ;; -------------------------
 ;; Initialize app
@@ -129,9 +105,10 @@
      (fn [path]
        (secretary/locate-route path))})
   (accountant/dispatch-current!)
-  (rf/dispatch-sync [:initialize])
-  (rf/dispatch [:get-city-data])
-  (rf/dispatch [:get-map-data])
+  (rf/dispatch [:initialize])
+  (rf/dispatch [::us-map/get-city-data])
+  (rf/dispatch [::us-map/get-map-data])
+  (rf/dispatch [::examples/initialize])
   (mount-root))
 
 (defn ^:export main [] (init!))
