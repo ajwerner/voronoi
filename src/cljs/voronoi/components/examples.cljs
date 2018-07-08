@@ -3,6 +3,7 @@
   (:require [voronoi.points :as points]
             [re-frame.core :as rf]
             [voronoi.voronoi :as vor]
+            [voronoi.components.svg :as svg]
             [re-com.core :as rc]))
 
 (def misc-state
@@ -77,7 +78,7 @@
   ::load-test-data
   (fn [{id :id points :points extent :extent :as data} _]
     (go
-      (rf/dispatch [::loaded-test-data id (vor/finish (vor/new-voronoi points :extent extent))]))))
+      (rf/dispatch [::loaded-test-data id (vor/new-voronoi points :extent extent)]))))
 
 (rf/reg-sub
   ::example-data-keys
@@ -101,15 +102,13 @@
     [rc/box
      :align :center
      :size "1"
-     :child
-     [voronoi.components.svg/voronoi-svg (rf/subscribe [::tab-vor])]]))
+     :child [svg/voronoi-svg (rf/subscribe [::tab-vor])]]))
 
 (rf/reg-sub
   ::tabs
   :<- [::example-data-keys]
   (fn [keys _]
-    (into [] (for [k keys]
-               {:id k :label (name k)}))))
+    (into [] (for [k keys] {:id k :label (name k)}))))
 
 (rf/reg-sub
   ::cur-tab
@@ -123,18 +122,20 @@
   (fn [db [_ id]]
     (assoc db ::cur-tab id)))
 
-(defn examples []
+(defn examples-controller []
+  [rc/box
+   :width "150px"
+   :align :center
+   :style {:overflow "auto"}
+   :child
+   [rc/vertical-bar-tabs
+    :tabs (rf/subscribe [::tabs])
+    :model (rf/subscribe [::cur-tab])
+    :on-change #(rf/dispatch [::set-cur-tab %])]])
+
+(defn examples-page []
   (fn []
     [rc/h-box
      :size "auto"
-     :children
-     [[tab-svg]
-      [rc/box
-       :width "150px"
-       :align :center
-       :child
-       [rc/vertical-bar-tabs
-        :tabs (rf/subscribe [::tabs])
-        :model (rf/subscribe [::cur-tab])
-        :on-change #(rf/dispatch [::set-cur-tab %])]]]]))
-
+     :children [[tab-svg]
+                [examples-controller]]]))

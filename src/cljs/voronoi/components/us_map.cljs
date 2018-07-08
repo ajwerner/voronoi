@@ -1,14 +1,11 @@
 (ns voronoi.components.us-map
   (:require [voronoi.voronoi :as vor]
             [goog.labs.format.csv :as csv]
-            [voronoi.points :as points]
             [voronoi.components.arc-table :refer [arc-table-and-toggle]]
             [voronoi.components.svg :refer [voronoi-svg interactive-svg voronoi-group-im]]
             [voronoi.components.events-panel :refer [events-panel]]
             [voronoi.components.control-panel :refer [control-panel]]
-            [cljs-http.client :as http]
             [cljs.core.async :refer [<!]]
-            [cljsjs.topojson :as topojson]
             [re-com.core :as rc]
             [re-frame.core :as rf]
             [day8.re-frame.http-fx]
@@ -37,30 +34,15 @@
   (fn [db [_ response]]
     (assoc db ::map-data response)))
 
-
-
 (rf/reg-event-fx
   ::get-city-data
-  (fn [coeffects _]
-    (assoc coeffects
-      :http-xhrio {:method          :get
-                   :uri             "assets/1790-2010_MASTER.csv.txt"
-                   :response-format (ajax/text-response-format)
-                   :on-success      [::process-city-data]
-                   :on-failure      [::request-failed]})))
-
-(def albers-usa (js/d3.geoAlbersUsa))
-
-(def year-re #"[0-9]{4}")
-(defn ^:private cast-year-map-ints
-  [city-map]
-  (loop [ks (keys city-map) m city-map]
-    (let [k (first ks)]
-      (if (nil? k)
-        m
-        (if (re-matches year-re (name k))
-          (recur (rest ks) (update m k int))
-          (recur (rest ks) m))))))
+  (fn [{db :db} _]
+    {:db         db
+     :http-xhrio {:method          :get
+                  :uri             "assets/1790-2010_MASTER.csv.txt"
+                  :response-format (ajax/text-response-format)
+                  :on-success      [::process-city-data]
+                  :on-failure      [::request-failed]}}))
 
 (def ak-hi-names
   #{"Alaska" "Hawaii"})
@@ -68,22 +50,36 @@
 (def ak-hi-abrevs
   #{"AK" "HI"})
 
+(defn parse-csv-data [raw-data]
+  (let [data (csv/parse raw-data)
+        keys (->> (first data)
+                  (map keyword)
+                  repeat)]
+    (map zipmap keys (rest data))))
+
+(def year-re #"[0-9]{4}")
+(defn ^:private cast-year-map-ints
+  [city-map]
+  (loop [ks (keys city-map) m city-map]
+    (if-some [k (first ks)]
+      (if (re-matches year-re (name k))
+        (recur (rest ks) (update m k int))
+        (recur (rest ks) m))
+      m)))
+
+(def albers-usa (js/d3.geoAlbersUsa))
+(defn add-projected-coordinates [{lat :LAT_BING lon :LON_BING :as data}]
+  (let [[x y] (albers-usa (clj->js [lon lat]))]
+    (assoc data :x x :y y)))
+
 (rf/reg-event-db
   ::process-city-data
   (fn [db [_ response]]
-    (let [data (csv/parse response)
-          city-data (->> (map zipmap
-                              (->> (first data)
-                                   (map keyword)
-                                   repeat)
-                              (rest data))
-                         (remove #(ak-hi-abrevs (:ST %)))
-                         (map cast-year-map-ints)
-                         (map (fn [{lat :LAT_BING
-                                    lon :LON_BING :as data}]
-                                (let [[x y] (albers-usa (clj->js [lon lat]))]
-                                  (assoc data :x x :y y)))))]
-      (assoc db ::city-data city-data))))
+    (let [parsed (->> (parse-csv-data response)
+                      (remove #(ak-hi-abrevs (:ST %)))
+                      (map cast-year-map-ints)
+                      (map add-projected-coordinates))]
+      (assoc db ::city-data parsed))))
 
 (rf/reg-event-db
   ::set-top-n
@@ -94,6 +90,11 @@
   ::set-year
   (fn [db [_ year]]
     (assoc db ::year year)))
+
+(rf/reg-event-db
+  :polygon-over
+  (fn [db [_ site]]
+    (assoc db ::cur-city site)))
 
 (rf/reg-sub
   ::map-data-ready?
@@ -121,9 +122,6 @@
   (fn [db _]
     (if-let [year (::year db)] year :2010)))
 
-(enable-console-print!)
-
-
 (rf/reg-sub
   ::point-data-year
   :<- [::year]
@@ -147,8 +145,8 @@
   (fn [point-data _]
     (if point-data
       (-> point-data
-          (vor/new-voronoi :extent [0 1000 0 1000])
-          (vor/finish)))))
+          (vor/new-voronoi-builder :extent [0 1000 0 1000])
+          (vor/finish-builder)))))
 
 (rf/reg-sub
   ::us-path
@@ -162,57 +160,6 @@
                     ^{:key (:NAME (:properties f))}
                     [:path {:d (path (clj->js f))}])))))))
 
-(defn map-svg [us vor]
-  (fn []
-    (let [us @(rf/subscribe [::us-path])]
-      [:svg {:style {:width        "960px"
-                     :height       "500px"
-                     :stroke       "#aaa"
-                     :stroke-width 0.5
-                     :fill         "none"}}
-       [:defs
-        [:clipPath {:id "ko"} us]]
-       [:g {:id "usa"} us]
-       [:g {:clip-path "url(#ko)"}
-        [voronoi-group-im (rf/subscribe [::map-vor])]]])))
-
-
-(defn map-comp []
-  (fn []
-    (let [y (int (name @(rf/subscribe [::year])))
-          n @(rf/subscribe [::top-n])]
-      [rc/v-box
-       :children
-       [[rc/box
-         :align :center
-         :child [rc/title :label (str "Top " n " Cities in the Continental US in " y)]]
-        [rc/box
-         :child [map-svg]]
-        [rc/box
-         :child [:p @(rf/subscribe [::cur-city-info])]]
-        [rc/h-box
-         :align :start
-         :children
-         [[rc/box :width "50px" :child [rc/title :level :level3 :label "Year"]]
-          [rc/box :width "50px" :child (str y)]
-          [rc/box
-           :child
-           [rc/slider :width "700px" :model y :min 1790 :max 2010 :step 10
-            :on-change #(rf/dispatch [::set-year (keyword (str %))])]]]]
-        [rc/h-box
-         :justify :center
-         :children
-         [[rc/box :size "50px" :child [rc/title :level :level3 :label "Top"]]
-          [rc/box :size "50px" :child (str n)]
-          [rc/box :size "1"
-           :child [rc/slider :width "700px" :model n :min 3 :max 100
-                   :on-change #(rf/dispatch [::set-top-n %])]]]]]])))
-
-(rf/reg-event-db
-  :polygon-over
-  (fn [db [_ site]]
-    (assoc db ::cur-city site)))
-
 (rf/reg-sub
   ::cur-city
   (fn [db _]
@@ -223,16 +170,85 @@
   :<- [::cur-city]
   :<- [::year]
   (fn [[city year] _]
-    (str (:CityST city) " " (year city))))
+    (if (and city year)
+      (str (:CityST city) " " (year city)))))
+
+
+(defn map-svg []
+  (fn []
+    (let [us @(rf/subscribe [::us-path])]
+      [rc/box
+       :child
+       [:svg {:style {:width        "960px"
+                      :height       "500px"
+                      :stroke       "#aaa"
+                      :stroke-width 0.5
+                      :fill         "none"}}
+        [:defs
+         [:clipPath {:id "ko"} us]]
+        [:g {:id "usa"} us]
+        [:g {:clip-path "url(#ko)"}
+         [voronoi-group-im (rf/subscribe [::map-vor])]]]])))
+
+(defn map-title [n y]
+  [rc/box
+   :align :center
+   :child
+   [rc/title
+    :level :level1
+    :label (str "Top " n " cities by population in the continental US in " y)]])
+
+(defn year-slider [y]
+  [rc/h-box
+   :align :start
+   :children
+   [[rc/box :width "50px" :child [rc/title :level :level3 :label "Year"]]
+    [rc/box :width "50px" :child (str y)]
+    [rc/box
+     :child
+     [rc/slider :width "700px" :model y :min 1790 :max 2010 :step 10
+      :on-change #(rf/dispatch [::set-year (keyword (str %))])]]]])
+
+(defn top-n-slider [n]
+  [rc/h-box
+   :align :start
+   :children
+   [[rc/box :size "50px" :child [rc/title :level :level3 :label "Top"]]
+    [rc/box :size "50px" :child (str n)]
+    [rc/box :size "1"
+     :child [rc/slider :width "700px" :model n :min 3 :max 100
+             :on-change #(rf/dispatch [::set-top-n %])]]]])
+
+(defn cur-city-info []
+  (fn []
+    (let [cur-city @(rf/subscribe [::cur-city-info])]
+      [rc/box :child
+       (if cur-city
+         [:p cur-city]
+         [:p {:style {:font-style "italic"}}
+          "Hover over a city"])])))
+
+(defn map-sliders [n y]
+  [rc/v-box
+   :align :start
+   :children
+   [[year-slider y]
+    [top-n-slider n]]])
+
+(defn map-comp []
+  (fn []
+    (let [y (int (name @(rf/subscribe [::year])))
+          n @(rf/subscribe [::top-n])]
+      [rc/v-box
+       :align :center
+       :children
+       [[map-title n y]
+        [map-svg]
+        [cur-city-info]
+        [map-sliders n y]]])))
 
 (defn map-thing []
   (fn []
-    [rc/h-box
-     :justify :center
-     :children
-     [[rc/v-box
-       :children
-       [(if @(rf/subscribe [::map-data-ready?])
-          [rc/box :child [map-comp]]
-          [rc/throbber :size :large])
-        [:a {:href "#/misc"} "More Examples ->"]]]]]))
+    (if @(rf/subscribe [::map-data-ready?])
+      [map-comp]
+      [rc/throbber :size :large])))

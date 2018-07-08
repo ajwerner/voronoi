@@ -9,8 +9,7 @@
             [voronoi.points :as p]
             [voronoi.components :as components]
             [voronoi.components.us-map :as us-map]
-            [voronoi.components.examples :as examples]
-            [voronoi.routes :as routes]))
+            [voronoi.components.examples :as examples]))
 
 ;; -------------------------
 ;; Routing
@@ -21,7 +20,7 @@
 (secretary/defroute intro-p #"/intro" []
   (rf/dispatch [:page :intro]))
 
-(secretary/defroute misc-p "/misc" []
+(secretary/defroute examples-p "/examples" []
   (rf/dispatch [:page :tests]))
 
 (secretary/defroute animation-page "/animation-playground" []
@@ -35,7 +34,7 @@
 ;; State
 
 (defonce app-state (atom {:animation-page nil
-                          :misc nil
+                          :examples nil
                           :map-page {:outline nil
                                      :data nil}}))
 
@@ -65,21 +64,18 @@
 
 (reagent/cursor app-state [:animation-page])
 
-(defonce misc-page
-  #(components/misc
-    (reagent/cursor app-state [:misc])))
+(defonce examples-page #(components/examples-page))
 
-(defonce map-page
-  #(us-map/map-thing))
+(defonce map-page #(components/map-page))
 
 (defonce animation-playground-page
   #(components/animation-playground
     (reagent/cursor app-state [:animation-page])))
 
 (def routes
-  {:intro #'components/intro
+  {:intro #'components/intro-page
    :voronoi-diagrams-intro #'components/voronoi-diagrams
-   :tests #'misc-page
+   :tests #'examples-page
    :playground #'animation-playground-page
    :map #'map-page})
 

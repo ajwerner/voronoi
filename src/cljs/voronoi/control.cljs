@@ -15,7 +15,7 @@
 
 (defn reset-scan [state]
   (let [ss (assoc state :scan {:paused true})
-        ss (assoc ss :voronoi (vor/new-voronoi (:points ss)))]
+        ss (assoc ss :voronoi (vor/new-voronoi-builder (:points ss)))]
     ss))
 
 (defn reset-state [points]

@@ -7,4 +7,4 @@
 (deftest test-it
   (let [size 10000]
     (time
-     (vor/finish (vor/new-voronoi (points/random-points size))))))
+      (vor/finish-builder (vor/new-voronoi-builder (points/random-points size))))))

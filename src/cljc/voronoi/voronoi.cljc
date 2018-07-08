@@ -1,6 +1,5 @@
 (ns voronoi.voronoi
-  (:require [clojure.string :as str]
-            [clojure.data.avl :as avl]
+  (:require [clojure.data.avl :as avl]
             [voronoi.util :refer [Infinity -Infinity sqrt isNaN? close
                                   is-infinite?]]
             [voronoi.point :as point]
@@ -14,48 +13,9 @@
 ;; The orientation assumed is that (0, 0) is in the top left corner and
 ;; y-increases going down. This can be horribly confusing. I regret it.
 
-(defn build-points [initial-points]
-  (loop [to-process initial-points
-         processed (sorted-set-by point/y-ordered-epsilon-comparator)]
-    (let [cur (first to-process)
-          exists (contains? processed cur)
-          processed (if-not exists (processed cur) processed)]
-      (recur (rest to-process) processed))))
 
 ;; we want to write a thing to make a list of points
 
-(defn extent-zone [[xmin xmax ymin ymax :as extent] {x :x y :y}]
-  (if (some? extent)
-    [(< x xmin) (> x xmax) (< y ymin) (> y ymax)]))
-
-(defn outside-extent? [extent p]
-  (if extent
-    (some true? (extent-zone extent p))
-    false))
-
-(defn create-points-from-input [input extent]
-  (->> input
-      (remove #(outside-extent? extent %))
-      (map point/map->Point)))
-
-(defn new-voronoi
-  "Returns a map representing a voronoi builder"
-  [input & {:keys [extent no-extent]}]
-  (let [points (create-points-from-input input extent)
-        extent (if extent extent
-                   (if (not no-extent)
-                     (-> points
-                         (point/bound-box)
-                         (point/widen-by-percent 40))))
-        events (into (sorted-set-by event/event-comparator) points)
-        scan (:y (first events))]
-    {:input input
-     :points points
-     :scan scan
-     :events events
-     :extent extent
-     :edges []
-     :arcs (avl/sorted-map-by arc/arc-comparator)}))
 
 (defn check-circle [arc]
   (let [l (:left arc)
@@ -76,12 +36,12 @@
           ev (event/->CircleEvent x y center arc)]
       ev)))
 
-(defn make-persistent! [{:keys [arcs edges] :as vor}]
+(defn make-persistent! [{:keys [edges] :as vor}]
   (cond-> vor
     true (assoc! :edges (persistent! edges))
     true (persistent!)))
 
-(defn make-transient [{:keys [arcs edges] :as vor}]
+(defn make-transient [{:keys [edges] :as vor}]
   (cond-> vor
     true (transient)
     true (assoc! :edges (transient edges))))
@@ -137,11 +97,10 @@
 (defn ^:private handle-later-site-event!
   "Used after the first site event where things are weird."
   [{arcs :arcs
-    scan :scan
     events :events
     edges :edges
     :as vor}
-   {x :x y :y :as ev}]
+   {y :y :as ev}]
   (let [[l _] (avl/nearest arcs < (assoc ev :query true))
         [arc-above
          false-circle]  (if (and (> (count arcs) 1)
@@ -170,9 +129,6 @@
                                           :vert y (point/->Point
                                                    (:x (:begin new-bp-r))
                                                    -Infinity)))
-        event-is-on-vert-line (and (= :vert
-                                      (:side (:edge bp-r)))
-                                   (close  (:x ev) (:x (:begin (:edge bp-r)))))
         new-vert-bp (if (and new-vertical
                              (isNaN? (:y (:begin new-vert-bp))))
                       (assoc-in new-vert-bp [:begin :y] (:y (:begin bp-l)))
@@ -248,11 +204,6 @@
 (defn scan-by! [vor by]
   (scan-to! vor (+ (:scan vor) by)))
 
-(defn scan-to [vor to]
-  (make-persistent! (scan-to! (make-transient vor) to)))
-
-(defn reset-to [vor y]
-  (scan-to (new-voronoi (:points vor)) y))
 
 (defn ^:private process-all-events! [vor]
   (loop [{events :events :as vor} vor]
@@ -263,17 +214,20 @@
 (defn process-all-events [vor]
   (make-persistent! (process-all-events! (make-transient vor))))
 
-(defn add-site-edge [edge-list half-edge]
+(defn ^:private add-site-edge
+  [edge-list half-edge]
   (if edge-list
     (conj edge-list half-edge)
     [half-edge]))
 
-(defn add-cell-edges [site-edges {half-edge :edge} i]
+(defn ^:private add-cell-edges
+  [site-edges {half-edge :edge} i]
   (-> site-edges
       (update (:site1 half-edge) add-site-edge i)
       (update (:site2 half-edge) add-site-edge i)))
 
-(defn make-cells [vor]
+(defn ^:private make-cells
+  [vor]
   (loop [i 0
          edges (seq (:edges vor))
          cells {}]
@@ -285,7 +239,7 @@
 
 (def ^:private arc-break (comp :right first))
 
-(defn get-breaks
+(defn ^:private get-breaks
   "returns the break points from a voronoi builder"
   [vor]
   (->> (seq (:arcs vor))
@@ -299,17 +253,11 @@
   "
   [vor]
   (loop [v vor breaks (get-breaks vor)]
-    (let [{edges :edges
-           y :scan} v]
+    (let [{edges :edges} v]
       (if (empty? breaks)
         v
-        (let [{side :side
-               begin :begin
-               :as break} (first breaks)
-              {m :m
-               b :b
-               is-vertical :is-vertical
-               :as edge} (:edge break)
+        (let [{side :side :as break} (first breaks)
+              {m :m b :b is-vertical :is-vertical} (:edge break)
               end (if is-vertical
                     (do
                       (condp side =
@@ -330,12 +278,12 @@
               edges (conj! edges complete)]
           (recur (assoc! v :edges edges) (rest breaks)))))))
 
-(defn order-cell
+(defn ^:private order-cell
   "
   Takes the edges corresponding to a site and puts them in counter-clockwise
   order
   "
-  [vor site cell]
+  [vor site]
   (let [[xmin xmax ymin ymax :as extent] (:extent vor)
         cell-indices (get (:cells vor) site)
         edges (:edges vor)
@@ -477,14 +425,15 @@
                       (update vor :cells assoc site cell))))))
       (update vor :cells assoc site cell))))
 
-(defn order-cells [vor]
+(defn ^:private order-cells
+  [vor]
   (reduce-kv order-cell vor (:cells vor)))
 
 ;; for each cell, we'll go through and clip any edges which need to be clipped
 ;; the problem with this is an edge may be shared and need to get clipped
 ;; maybe we can do this as a breadth first search algorithm
 
-(defn clip-one-side
+(defn ^:private clip-one-side
   "
   Clips the completed edge to the extent boundary
   For now defer adding edges
@@ -495,7 +444,7 @@
   (let [pk (if is-left? :p0 :p1)
         ok (if is-left? :p1 :p0)
         {px :x :as p} (pk c)
-        {ox :x :as o} (ok c)
+        {ox :x} (ok c)
         x (cond
             (> px ox) xmax
             (= px ox) px
@@ -509,7 +458,25 @@
                 :else [x clip-y])]
     (assoc c pk (point/->Point x y))))
 
-(defn clip-edge
+(defn ^:private extent-zone
+  [[xmin xmax ymin ymax :as extent] {x :x y :y}]
+  (if (some? extent)
+    [(< x xmin) (> x xmax) (< y ymin) (> y ymax)]))
+
+(defn ^:private outside-extent?
+  [extent p]
+  (if extent
+    (some true? (extent-zone extent p))
+    false))
+
+(defn ^:private create-points-from-input
+  [input extent]
+  (->> input
+       (remove #(outside-extent? extent %))
+       (map point/map->Point)))
+
+
+(defn ^:private clip-edge
   [extent {p0 :p0 p1 :p1 :as c}]
   (let [zone0 (extent-zone extent p0)
         zone1 (extent-zone extent p1)
@@ -524,10 +491,9 @@
                 (clip-one-side extent true)
                 (clip-one-side extent false)))))
 
-(defn clip-edges
+(defn ^:private clip-edges
   [{edges :edges
-    extent :extent
-    :as vor}]
+    extent :extent}]
   (if extent
     (->> edges
          (map #(clip-edge extent %))
@@ -535,22 +501,58 @@
          (into []))
     edges))
 
-(defn build-cells [vor]
+(defn ^:private build-cells
+  [vor]
   (as-> vor v
     (assoc v :edges (clip-edges v))
     (assoc v :cells (make-cells v))
     (order-cells v)))
 
-(defn finish [vor]
- (-> vor
-     (make-transient)
-     (process-all-events!)
-     (complete-all-breaks!)
-     (scan-by! 10)
-     (make-persistent!)
-     (build-cells)))
 
-(defn cell-to-polygon [site cell edges]
+(defn new-voronoi-builder
+  "Returns a map representing a voronoi builder.
+  If no extent is specified, a default extent 40% larger than
+  the bounding box of the points will be used unless no-extent is specified.
+  "
+  [input & {:keys [extent no-extent]}]
+  (let [points (create-points-from-input input extent)
+        extent (if extent extent
+                          (if (not no-extent)
+                            (-> points
+                                (point/bound-box)
+                                (point/widen-by-percent 40))))
+        events (into (sorted-set-by event/event-comparator) points)
+        scan (:y (first events))]
+    {:input input
+     :points points
+     :scan scan
+     :events events
+     :extent extent
+     :edges []
+     :arcs (avl/sorted-map-by arc/arc-comparator)}))
+
+(defn scan-to [vor to]
+  (make-persistent! (scan-to! (make-transient vor) to)))
+
+(defn reset-to [vor y]
+  (scan-to (new-voronoi-builder (:points vor)) y))
+
+
+(defn finish-builder
+  "finish-builder takes a voronoi builder, process all events, and clips cells to the extent
+  as appropriate."
+  [vor]
+  (-> vor
+      (make-transient)
+      (process-all-events!)
+      (complete-all-breaks!)
+      (scan-by! 10)
+      (make-persistent!)
+      (build-cells)
+      (dissoc :arcs)
+      (dissoc :scan)))
+
+(defn ^:private cell-to-polygon [site cell edges]
   (->> cell
        (map #(nth edges %))
        (remove #(= (:p0 %) (:p1 %)))
@@ -564,3 +566,6 @@
     (map (fn [[site cell]] {:cell (cell-to-polygon site cell edges)
                             :site site})
          cells)))
+
+(defn new-voronoi [input & args]
+  (finish-builder (apply new-voronoi-builder input args)))

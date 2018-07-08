@@ -123,8 +123,6 @@
                                              "red"
                                              "cyan")})))
 
-
-
 (defn draw-breaks [breaks y]
   [:g
    (map-indexed
@@ -150,7 +148,11 @@
        (fn [i {points :cell site :site}]
          (let [points-str
                (string/join " " (map #(str (:x %) "," (:y %)) points))]
-           ^{:key i} [:polygon {:points points-str :on-mouse-over #(rf/dispatch [:polygon-over site])}]))
+           ^{:key i} [:polygon {:points points-str
+                                :on-mouse-over #(rf/dispatch [:polygon-over site])
+                                :on-click (fn [ev]
+                                            (.preventDefaults ev)
+                                            false)}]))
        (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)) p))]))
 
 (defn draw-polygons [vor-cursor]

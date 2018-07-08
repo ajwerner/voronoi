@@ -10,7 +10,7 @@
   (time
    (criterium/with-progress-reporting
      (criterium/bench
-      (vor/finish (vor/new-voronoi (points/random-points size)))
+      (vor/finish-builder (vor/new-voronoi-builder (points/random-points size)))
       :verbose)))
   nil)
 
