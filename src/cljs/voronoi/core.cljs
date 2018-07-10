@@ -80,7 +80,7 @@
    :map #'map-page})
 
 (defn ui []
-  [:div.container
+  [:div
    (if-let [p @(rf/subscribe [:current-page])]
      [(p routes)])])
 

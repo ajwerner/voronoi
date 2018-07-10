@@ -178,12 +178,17 @@
   (fn []
     (let [us @(rf/subscribe [::us-path])]
       [rc/box
+       :width "100%"
+       :min-width "400px"
+       :min-height "200px"
+       :size "auto"
        :child
-       [:svg {:style {:width        "960px"
-                      :height       "500px"
+       [:svg {:style {:height "100%"
                       :stroke       "#aaa"
                       :stroke-width 0.5
-                      :fill         "none"}}
+                      :fill         "none"}
+              :view-box "50 0 875 500"
+              :preserve-aspect-ratio "xMidYMax meet"}
         [:defs
          [:clipPath {:id "ko"} us]]
         [:g {:id "usa"} us]
@@ -198,26 +203,21 @@
     :level :level1
     :label (str "Top " n " cities by population in the continental US in " y)]])
 
-(defn year-slider [y]
+(defn slider [model title min max step on-change]
   [rc/h-box
    :align :start
    :children
-   [[rc/box :width "50px" :child [rc/title :level :level3 :label "Year"]]
-    [rc/box :width "50px" :child (str y)]
-    [rc/box
-     :child
-     [rc/slider :width "700px" :model y :min 1790 :max 2010 :step 10
-      :on-change #(rf/dispatch [::set-year (keyword (str %))])]]]])
+   [                                                        ;;[rc/box :size "38px" :child [rc/title :level :level3 :label title]]
+    [rc/box :size "38px" :child (str model)]
+    [rc/box :size "1"
+     :child [rc/slider :width "350px" :model model :min min :max max :step step :on-change on-change
+             :style {:height "30px"} :class "slides"]]]])
+
+(defn year-slider [y]
+  [slider y "Year" 1790 2010 10 #(rf/dispatch [::set-year (keyword (str %))])])
 
 (defn top-n-slider [n]
-  [rc/h-box
-   :align :start
-   :children
-   [[rc/box :size "50px" :child [rc/title :level :level3 :label "Top"]]
-    [rc/box :size "50px" :child (str n)]
-    [rc/box :size "1"
-     :child [rc/slider :width "700px" :model n :min 3 :max 100
-             :on-change #(rf/dispatch [::set-top-n %])]]]])
+  [slider n "Top" 3 200 1 #(rf/dispatch [::set-top-n %])])
 
 (defn cur-city-info []
   (fn []
@@ -241,6 +241,8 @@
           n @(rf/subscribe [::top-n])]
       [rc/v-box
        :align :center
+       :min-width "400px"
+       :size "auto"
        :children
        [[map-title n y]
         [map-svg]

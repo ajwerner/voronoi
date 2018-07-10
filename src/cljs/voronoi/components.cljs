@@ -25,8 +25,7 @@
                  :overflow "hidden"}}
         [interactive-svg vor scroll]]
        [control-panel db]
-       [arc-table-and-toggle vor]
-       ])))
+       [arc-table-and-toggle vor]])))
 
 (defn animation-playground [db]
   (let []
@@ -36,10 +35,8 @@
        [new-app-thing db "animation-playground"]
        [:div [:a {:href "#/examples"} "<- Examples"]]])))
 
-
 (defn bulleted-list [& li-text-items]
   [:ul (map #(into ^{:key %} [:li] %) li-text-items)])
-
 
 (defn about-diagrams []
   [rc/v-box
@@ -65,29 +62,22 @@
      "]]])
 
 (defn link [link-info text-fn]
-  (println link-info)
   (if link-info
     [rc/box
-     :child [:a {:href (:href link-info)}
-             (text-fn link-info)]]))
-
-
+     :child [:a {:href (:href link-info)} (text-fn link-info)]]))
 
 (defn links [prev next]
   (let [prev-text (fn [{:keys [text]}]
                     (str "<- " text))
         next-text (fn [{:keys [text]}]
                     (str text " ->"))
-        children (->> [(link prev prev-text)
+        children (->> [[rc/gap :size "10px"]
+                       (link prev prev-text)
                        [rc/gap :size "1"]
-                       (link next next-text)]
+                       (link next next-text)
+                       [rc/gap :size "10px"]]
                       (remove nil?)
-                      (into []))
-        ]
-    (println "children " prev next " adsfadsf "
-             [(link prev prev-text)
-              [rc/gap :size "1"]
-              (link next next-text)])
+                      (into []))]
     [rc/h-box
      :justify :start
      :width "100%"
@@ -100,7 +90,8 @@
    :justify :between
    :children
    [[rc/box
-     :height "95vh"
+     :height "97vh"
+     :size "auto"
      :width "100%"
      :style {:overflow "auto"}
      :child [content]]
