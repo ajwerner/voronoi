@@ -150,9 +150,7 @@
                (string/join " " (map #(str (:x %) "," (:y %)) points))]
            ^{:key i} [:polygon {:points points-str
                                 :on-mouse-over #(rf/dispatch [:polygon-over site])
-                                :on-click (fn [ev]
-                                            (.preventDefaults ev)
-                                            false)}]))
+                                :on-click (fn [] nil)}]))
        (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)) p))]))
 
 (defn draw-polygons [vor-cursor]
@@ -245,7 +243,7 @@
         [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)]
     [:svg {:view-box            (string/join " " [xmin ymin (- xmax xmin) (- ymax ymin)])
            :preserveAspectRatio "xMidYMid meet"
-           :style {:max-height "100%"
+           :style {:max-height "95vh"
                    :width "100%"
                    }}
      [draw-extent extent]

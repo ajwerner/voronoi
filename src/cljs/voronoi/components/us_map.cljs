@@ -10,7 +10,8 @@
             [re-frame.core :as rf]
             [day8.re-frame.http-fx]
             [ajax.core :as ajax]
-            [cljsjs.d3]))
+            [cljsjs.d3]
+            [mranderson048.reagent.v0v8v0.reagent.core :as r]))
 
 
 (rf/reg-event-fx
@@ -129,7 +130,9 @@
   (fn [[year city-data] _]
     (if city-data
       (->> city-data
-           (remove #(nil? (year %)))
+           (remove #(let [y (year %)]
+                      (or (nil? y)
+                          (== 0 y))))
            (sort-by year >)))))
 
 (rf/reg-sub
@@ -137,7 +140,7 @@
   :<- [::point-data-year]
   :<- [::top-n]
   (fn [[point-data n] _]
-    (take n point-data)))
+     (take n point-data)))
 
 (rf/reg-sub
   ::map-vor
@@ -181,7 +184,7 @@
        :width "100%"
        :min-width "400px"
        :min-height "200px"
-       :size "auto"
+       :size "initial"
        :child
        [:svg {:style {:height "100%"
                       :stroke       "#aaa"
@@ -195,20 +198,21 @@
         [:g {:clip-path "url(#ko)"}
          [voronoi-group-im (rf/subscribe [::map-vor])]]]])))
 
+
 (defn map-title [n y]
   [rc/box
    :align :center
    :child
    [rc/title
-    :level :level1
+    :style {:text-align :center}
+    :level :level2
     :label (str "Top " n " cities by population in the continental US in " y)]])
 
 (defn slider [model title min max step on-change]
   [rc/h-box
    :align :start
    :children
-   [                                                        ;;[rc/box :size "38px" :child [rc/title :level :level3 :label title]]
-    [rc/box :size "38px" :child (str model)]
+   [[rc/box :size "38px" :child (str model)]
     [rc/box :size "1"
      :child [rc/slider :width "350px" :model model :min min :max max :step step :on-change on-change
              :style {:height "30px"} :class "slides"]]]])
@@ -241,7 +245,8 @@
           n @(rf/subscribe [::top-n])]
       [rc/v-box
        :align :center
-       :min-width "400px"
+       :min-width "375px"
+       :max-height "94vh"
        :size "auto"
        :children
        [[map-title n y]

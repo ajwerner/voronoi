@@ -102,6 +102,7 @@
     [rc/box
      :align :center
      :size "1"
+     :max-height "93vmin"
      :child [svg/voronoi-svg (rf/subscribe [::tab-vor])]]))
 
 (rf/reg-sub
@@ -125,7 +126,8 @@
 (defn examples-controller []
   [rc/box
    :width "150px"
-   :align :center
+   :max-height "94vh"
+   :justify :center
    :style {:overflow "auto"}
    :child
    [rc/vertical-bar-tabs
