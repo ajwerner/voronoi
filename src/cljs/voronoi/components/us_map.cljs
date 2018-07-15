@@ -10,8 +10,7 @@
             [re-frame.core :as rf]
             [day8.re-frame.http-fx]
             [ajax.core :as ajax]
-            [cljsjs.d3]
-            [mranderson048.reagent.v0v8v0.reagent.core :as r]))
+            [cljsjs.d3]))
 
 
 (rf/reg-event-fx
