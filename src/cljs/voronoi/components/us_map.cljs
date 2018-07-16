@@ -142,6 +142,12 @@
      (take n point-data)))
 
 (rf/reg-sub
+  ::real-n
+  :<- [::point-data]
+  (fn [point-data _]
+    (count point-data)))
+
+(rf/reg-sub
   ::map-vor
   :<- [::point-data]
   (fn [point-data _]
@@ -175,6 +181,12 @@
     (if (and city year)
       (str (:CityST city) " " (year city)))))
 
+(rf/reg-sub
+  ::max-n
+  :<- [::point-data-year]
+  (fn [point-data _]
+    (min 200 (count point-data))))
+
 
 (defn map-svg []
   (fn []
@@ -199,13 +211,16 @@
 
 
 (defn map-title [n y]
-  [rc/box
-   :align :center
-   :child
-   [rc/title
-    :style {:text-align :center}
-    :level :level2
-    :label (str "Top " n " cities by population in the continental US in " y)]])
+  (fn []
+    (let [n @(rf/subscribe [::real-n])
+          y @(rf/subscribe [::year])]
+      [rc/box
+       :align :center
+       :child
+       [rc/title
+        :style {:text-align :center}
+        :level :level3
+        :label (str "Top " n " cities by population in the continental US in " (name y))]])))
 
 (defn slider [model title min max step on-change]
   [rc/h-box
@@ -216,11 +231,16 @@
      :child [rc/slider :width "350px" :model model :min min :max max :step step :on-change on-change
              :style {:height "30px"} :class "slides"]]]])
 
-(defn year-slider [y]
-  [slider y "Year" 1790 2010 10 #(rf/dispatch [::set-year (keyword (str %))])])
+(defn year-slider []
+  (fn []
+    (let [y @(rf/subscribe [::year])]
+      [slider (int (name y)) "Year" 1790 2010 10 #(rf/dispatch [::set-year (keyword (str %))])])))
 
-(defn top-n-slider [n]
-  [slider n "Top" 3 200 1 #(rf/dispatch [::set-top-n %])])
+(defn top-n-slider []
+  (fn []
+    (let [n @(rf/subscribe [::real-n])
+          max-n @(rf/subscribe [::max-n])]
+      [slider n "Top" 3 max-n 1 #(rf/dispatch [::set-top-n %])])))
 
 (defn cur-city-info []
   (fn []
@@ -231,27 +251,24 @@
          [:p {:style {:font-style "italic"}}
           "Hover over a city"])])))
 
-(defn map-sliders [n y]
+(defn map-sliders []
   [rc/v-box
    :align :start
    :children
-   [[year-slider y]
-    [top-n-slider n]]])
+   [[year-slider]
+    [top-n-slider]]])
 
 (defn map-comp []
-  (fn []
-    (let [y (int (name @(rf/subscribe [::year])))
-          n @(rf/subscribe [::top-n])]
-      [rc/v-box
-       :align :center
-       :min-width "375px"
-       :max-height "94vh"
-       :size "auto"
-       :children
-       [[map-title n y]
-        [map-svg]
-        [cur-city-info]
-        [map-sliders n y]]])))
+  [rc/v-box
+   :align :center
+   :min-width "375px"
+   :max-height "94vh"
+   :size "auto"
+   :children
+   [[map-title]
+    [map-svg]
+    [cur-city-info]
+    [map-sliders]]])
 
 (defn map-thing []
   (fn []

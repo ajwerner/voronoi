@@ -96,7 +96,7 @@
     :max-width "100vw"
     :children
     [[rc/title :level :level1 :label "Voronoi Diagrams"]
-     [rc/title :level :level3 :label "What is this?"]
+     [rc/title :level :level2 :label "What is this?"]
      [p
       "This post is primarily about Voronoi diagram but along the way it's also about:"]
      [bulleted-list
@@ -106,9 +106,28 @@
       "Robust geometric predicates with floating point"]
      [rc/title :level :level3 :label "What is this not?"]
      [p
-      "Novel, this project has no novel contributions to offer to the world.
+      "Novel, this project has no particularly novel contributions to offer to the world.
        Any seemingly deep insight was much more deeply pursued by somebody else.
-       I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]]]])
+       I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]
+     [p
+      " I  particularly want to highlight the work in"
+      [:a {:href "https://github.com/d3/d3-voronoi"}
+       " D3 Voronoi "]
+      "and the"
+      [:a {:href "https://visionscarto.net/the-state-of-d3-voronoi"}
+       " wonderful writeup by Philippe Rivi\u00e8re"]
+      ". For almost all practical use cases, D3 will be a better choice for a variety of reasons.
+      One could argue that much of the code in this project is just an ad-hoc re-implementation of
+      functionality found in D3. This project was an outlet for me to improve my ability to express
+      myself visually with code and to grapple with the challenges of building UI. I hope you enjoy it
+      and find it to be valuable educational material."]
+     [rc/title :level :level3 :label "Maybe interesting things"]
+     [p
+      "Despite not being ground-breaking, there are some things that this implementations sets out to do that hopefully
+      make it a little interesting. We'll explore those a little bit on later pages."]
+     [bulleted-list
+      [p "Careful handling of co-circular and co-linear points"]
+      "Exposed algorithm state for pedagogical and artistic properties."]]]])
 
 (defn about-diagrams []
   [rc/v-box

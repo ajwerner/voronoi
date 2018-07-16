@@ -1,10 +1,9 @@
 (ns voronoi.arc
   (:require [voronoi.util :refer [Infinity -Infinity close]]
-            [voronoi.point :as point
-             :refer [->Point map->Point
-                     y-ordered-epsilon-comparator
-                     x-ordered-comparator
-                     ccw midpoint]]
+            [voronoi.point :refer [->Point map->Point
+                                   y-ordered-epsilon-comparator
+                                   x-ordered-comparator
+                                   ccw midpoint]]
             [voronoi.edge :refer [intersect-edges]]
             [voronoi.break-point :as bp :refer [break-point-point]]))
 

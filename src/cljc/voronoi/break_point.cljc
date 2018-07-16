@@ -39,8 +39,7 @@
                 (/ (* -1 B) (* 2 A))
                 (let [num (- (* -1 B) (sqrt descrim))]
                   (if (> py oy)
-                    ;; if left, use more precise float logic by rationalizing
-                    ;; the denominator
+                    ;; if left, use more precise float logic by rationalizing the denominator
                     (/ (* 2 C) num)
                     (/ num (* 2 A)))))]
         x)))
