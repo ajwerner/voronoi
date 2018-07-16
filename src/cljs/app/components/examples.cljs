@@ -1,9 +1,9 @@
-(ns voronoi.components.examples
+(ns app.components.examples
   (:require-macros [cljs.core.async :refer [go]])
   (:require [voronoi.points :as points]
             [re-frame.core :as rf]
             [voronoi.voronoi :as vor]
-            [voronoi.components.svg :as svg]
+            [app.components.svg :as svg]
             [re-com.core :as rc]))
 
 (def misc-state

@@ -58,7 +58,7 @@
   "
   @param {IBreakPointPoint} args
   @param {number} y
-  @return {voronoi.point.Point}
+  @return {app.point.Point}
   "
   [^BreakPointArgs args ^double y]
   (let [x (point-x args y)
@@ -66,7 +66,7 @@
     (->Point x y)))
 
 (defn break-point-point
-  "@return {voronoi.point.Point}"
+  "@return {app.point.Point}"
   [p ^double sweep-y]
   (break-point-point-with-args (:pp p) sweep-y))
 

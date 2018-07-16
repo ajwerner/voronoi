@@ -1,13 +1,13 @@
-(ns voronoi.components.control-panel
+(ns app.components.control-panel
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.util :refer [Infinity -Infinity isNaN?]]
             [voronoi.points :as points]
-            [voronoi.control :refer [toggle-pause-scan!
-                                     reset-state!
-                                     do-step!
-                                     do-set-to!
-                                     do-set-by!
-                                     add-points!]]))
+            [app.control :refer [toggle-pause-scan!
+                                 reset-state!
+                                 do-step!
+                                 do-set-to!
+                                 do-set-by!
+                                 add-points!]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Form helpers

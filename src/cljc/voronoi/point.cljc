@@ -10,8 +10,8 @@
 
 (defn midpoint
   "
-  @param {!Point|!voronoi.event.CircleEvent} a
-  @param {!Point|!voronoi.event.CircleEvent} b
+  @param {!Point|!app.event.CircleEvent} a
+  @param {!Point|!app.event.CircleEvent} b
   @return {!Point}
   "
   ^Point [^Point a ^Point b]
@@ -28,9 +28,9 @@
 
 (defn area2
   "
-  @param {!Point|!voronoi.event.CircleEvent} a
-  @param {!Point|!voronoi.event.CircleEvent} b
-  @param {!Point|!voronoi.event.CircleEvent} c
+  @param {!Point|!app.event.CircleEvent} a
+  @param {!Point|!app.event.CircleEvent} b
+  @param {!Point|!app.event.CircleEvent} c
   @return {!number}
   "
   ^double [a b c]
@@ -42,9 +42,9 @@
 
 (defn ccw
   "
-  @param {!Point|!voronoi.event.CircleEvent} a
-  @param {!Point|!voronoi.event.CircleEvent} b
-  @param {!Point|!voronoi.event.CircleEvent} c
+  @param {!Point|!app.event.CircleEvent} a
+  @param {!Point|!app.event.CircleEvent} b
+  @param {!Point|!app.event.CircleEvent} c
   @return {!number}
   "
   [a b c]
@@ -60,8 +60,8 @@
 
 (defn x-ordered-comparator
   "
-  @param {!Point|!voronoi.event.CircleEvent} a
-  @param {!Point|!voronoi.event.CircleEvent} b
+  @param {!Point|!app.event.CircleEvent} a
+  @param {!Point|!app.event.CircleEvent} b
   @return {!number}
   "
   [^Point a ^Point b]

@@ -1,6 +1,6 @@
 (defproject voronoi "0.1.0"
   :description "A Voronoi Diagram Reagent Project"
-  :url "http://ajwerner.github.io/voronoi"
+  :url "http://ajwerner.github.io/app"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
@@ -37,10 +37,10 @@
              :exclusions [org.clojure/clojure]]]
 
   :ring {:handler voronoi.handler/app
-         :uberwar-name "voronoi.war"}
+         :uberwar-name "app.war"}
 
   :min-lein-version "2.5.0"
-  :uberjar-name "voronoi.jar"
+  :uberjar-name "app.jar"
   :main voronoi.server
   :clean-targets ^{:protect false}
   [:target-path
@@ -67,7 +67,7 @@
             :min
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
              :compiler
-             {:main             "voronoi.core"
+             {:main             "app.core"
               :output-to        "target/cljsbuild/public/js/app.js"
               :output-dir       "target/cljsbuild/public/js"
               :source-map       "target/cljsbuild/public/js/app.js.map"
@@ -77,7 +77,7 @@
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
 
              :compiler
-             {:main             "voronoi.core"
+             {:main             "app.core"
               :output-to        "docs/js/app.js"
               :output-dir       "docs/js"
               :source-map       "docs/js/app.js.map"
@@ -96,7 +96,7 @@
               :install-deps true}}
             :app
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
-             :figwheel {:on-jsload "voronoi.core/mount-root"}
+             :figwheel {:on-jsload "app.core/mount-root"}
              :compiler
              {:main "voronoi.dev"
               :asset-path "/js/out"
@@ -117,7 +117,7 @@
    :nrepl-port 7002
    :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
    :css-dirs ["resources/public/css"]
-   :ring-handler voronoi.handler/app
+   :ring-handler app.handler/app
    :repl-eval-timeout 100000}
   :profiles {:dev {:repl-options {:init-ns voronoi.repl
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}

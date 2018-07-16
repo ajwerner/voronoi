@@ -1,8 +1,8 @@
-(ns voronoi.handler
+(ns app.handler
   (:require [compojure.core :refer [GET defroutes]]
             [compojure.route :refer [not-found resources]]
             [hiccup.page :refer [include-js include-css html5]]
-            [voronoi.middleware :refer [wrap-middleware]]
+            [app.middleware :refer [wrap-middleware]]
             [config.core :refer [env]]))
 
 (def mount-target

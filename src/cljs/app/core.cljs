@@ -1,15 +1,15 @@
-(ns voronoi.core
+(ns app.core
   (:require [clojure.string :as str]
             [reagent.core :as reagent :refer [atom]]
             [re-frame.core :as rf]
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
             [voronoi.voronoi :as vor]
-            [voronoi.control :refer [reset-state!]]
+            [app.control :refer [reset-state!]]
             [voronoi.points :as p]
-            [voronoi.components :as components]
-            [voronoi.components.us-map :as us-map]
-            [voronoi.components.examples :as examples]))
+            [app.components :as components]
+            [app.components.us-map :as us-map]
+            [app.components.examples :as examples]))
 
 ;; -------------------------
 ;; Routing
@@ -26,7 +26,7 @@
 (secretary/defroute animation-page "/animation-playground" []
   (rf/dispatch [:page :playground]))
 
-(secretary/defroute voronoi-description "/voronoi-diagrams" []
+(secretary/defroute voronoi-description "/app-diagrams" []
   (rf/dispatch [:page :voronoi-diagrams-intro]))
 
 

@@ -1,4 +1,4 @@
-(ns voronoi.control
+(ns app.control
   (:require [voronoi.voronoi :as vor]))
 
 (defn do-step! [state-atom]

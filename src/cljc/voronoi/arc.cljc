@@ -57,7 +57,7 @@
 
 (defn q-larger
   "
-  @param {!voronoi.point.Point} q
+  @param {!app.point.Point} q
   @param {!Arc} nq
   @param {!number} y
   @return {!boolean}

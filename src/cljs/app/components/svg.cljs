@@ -1,4 +1,4 @@
-(ns voronoi.components.svg
+(ns app.components.svg
   (:require [voronoi.util :refer [Infinity -Infinity isNaN? is-infinite?]]
             [voronoi.voronoi :as vor]
             [voronoi.arc :as arc]
@@ -76,19 +76,6 @@
 
 (defn get-edge [edges idx]
   (-> @(reagent/track get-edges edges) (nth idx)))
-
-(defn get-edges-count [edges]
-  (-> @(reagent/track get-edges edges) count))
-
-;; (defn completed-comp [completeds i]
-;;   (let [ts (reagent/track get-completed completeds i)]
-;;     (let [{{bx :x by :y} :begin
-;;            {ex :x ey :y} :end
-;;            :as completed} @t
-;;           ok (not-any? infy? [bx by ex ey])
-;;           ]
-;;       (if ok
-;;         [line bx by ex ey {:stroke "blue"}]))))
 
 (defn draw-complete-half-edges [edges-cursor]
   (let []
@@ -237,7 +224,7 @@
 
 (defn voronoi-svg
   "draws an svg
-  expects a ratom for a voronoi diagram"
+  expects a ratom for a app diagram"
   [voronoi]
   (let [extent (reagent/cursor voronoi [:extent])
         [xmin xmax ymin ymax] (point/widen-by-percent @extent 10)]

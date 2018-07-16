@@ -1,6 +1,7 @@
 (ns voronoi.clip
   (:require [voronoi.point :as point]
-            [voronoi.edge :as edge]))
+            [voronoi.edge :as edge]
+            [clojure.set]))
 
 (defn extent-zone
   [[xmin xmax ymin ymax :as extent] {x :x y :y}]

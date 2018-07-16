@@ -1,4 +1,4 @@
-(ns voronoi.server
+(ns app.server
     (:require [voronoi.handler :refer [app]]
               [config.core :refer [env]]
               [ring.adapter.jetty :refer [run-jetty]])

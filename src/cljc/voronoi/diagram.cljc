@@ -8,7 +8,7 @@
 (def ^:private arc-break (comp :right first))
 
 (defn get-breaks
-  "returns the break points from a voronoi builder"
+  "returns the break points from a app builder"
   [vor]
   (->> (seq (:arcs vor))
        (map arc-break)
@@ -95,7 +95,7 @@
         (clip/order-cells v)))
 
 (defn finish
-  "finish-builder takes a voronoi builder, process all events, and clips cells to the extent
+  "finish-builder takes a app builder, process all events, and clips cells to the extent
   as appropriate."
   [vor]
   (-> vor

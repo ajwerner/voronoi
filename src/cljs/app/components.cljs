@@ -1,14 +1,14 @@
-(ns voronoi.components
+(ns app.components
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.voronoi :as vor]
             [voronoi.points :as points]
-            [voronoi.components.arc-table :refer [arc-table-and-toggle]]
-            [voronoi.components.svg :refer [voronoi-svg interactive-svg voronoi-group]]
-            [voronoi.components.events-panel :refer [events-panel]]
-            [voronoi.components.control-panel :refer [control-panel]]
-            [voronoi.components.examples :as examples]
-            [voronoi.components.us-map :as us-map]
+            [app.components.arc-table :refer [arc-table-and-toggle]]
+            [app.components.svg :refer [voronoi-svg interactive-svg voronoi-group]]
+            [app.components.events-panel :refer [events-panel]]
+            [app.components.control-panel :refer [control-panel]]
+            [app.components.examples :as examples]
+            [app.components.us-map :as us-map]
             [re-com.core :as rc]
             [re-com.util :as rc-util]))
 
@@ -111,10 +111,10 @@
        I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]
      [p
       " I  particularly want to highlight the work in"
-      [:a {:href "https://github.com/d3/d3-voronoi"}
+      [:a {:href "https://github.com/d3/d3-app"}
        " D3 Voronoi "]
       "and the"
-      [:a {:href "https://visionscarto.net/the-state-of-d3-voronoi"}
+      [:a {:href "https://visionscarto.net/the-state-of-d3-app"}
        " wonderful writeup by Philippe Rivi\u00e8re"]
       ". For almost all practical use cases, D3 will be a better choice for a variety of reasons.
       One could argue that much of the code in this project is just an ad-hoc re-implementation of
@@ -155,7 +155,7 @@
 (defn intro-page []
   [page intro
    :prev {:text "Contrived example" :href "#/map"}
-   :next {:text "About Voronoi Diagrams" :href "#/voronoi-diagrams"}])
+   :next {:text "About Voronoi Diagrams" :href "#/app-diagrams"}])
 
 (defn map-page []
   [page us-map/map-thing
@@ -168,5 +168,5 @@
 
 (defn examples-page []
   [page examples/examples-page
-   :prev {:text "About Voronoi Diagrams" :href "#/voronoi-diagrams"}
+   :prev {:text "About Voronoi Diagrams" :href "#/app-diagrams"}
    :next {:text "Animations" :href "#/animation-playground"}])

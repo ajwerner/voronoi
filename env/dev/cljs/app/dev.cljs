@@ -1,6 +1,6 @@
 (ns ^:figwheel-no-load voronoi.dev
   (:require
-    [voronoi.core :as core]
+    [app.core :as core]
     [devtools.core :as devtools]))
 
 (devtools/install!)

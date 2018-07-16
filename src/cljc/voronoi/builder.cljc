@@ -222,7 +222,7 @@
        (map point/map->Point)))
 
 (defn new-builder
-  "Returns a map representing a voronoi builder.
+  "Returns a map representing a app builder.
   If no extent is specified, a default extent 40% larger than
   the bounding box of the points will be used unless no-extent is specified.
   "

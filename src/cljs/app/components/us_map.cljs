@@ -1,10 +1,7 @@
-(ns voronoi.components.us-map
+(ns app.components.us-map
   (:require [voronoi.voronoi :as vor]
+            [app.components.svg :refer [voronoi-svg interactive-svg voronoi-group-im]]
             [goog.labs.format.csv :as csv]
-            [voronoi.components.arc-table :refer [arc-table-and-toggle]]
-            [voronoi.components.svg :refer [voronoi-svg interactive-svg voronoi-group-im]]
-            [voronoi.components.events-panel :refer [events-panel]]
-            [voronoi.components.control-panel :refer [control-panel]]
             [cljs.core.async :refer [<!]]
             [re-com.core :as rc]
             [re-frame.core :as rf]

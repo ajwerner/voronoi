@@ -1,4 +1,4 @@
-(ns voronoi.components.events-panel
+(ns app.components.events-panel
   (:require [voronoi.voronoi :as vor]
             [voronoi.event :as event]))
 

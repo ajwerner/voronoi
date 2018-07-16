@@ -1,4 +1,4 @@
-(ns voronoi.components.arc-table
+(ns app.components.arc-table
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.arc :as arc]
             [voronoi.util :as u]
