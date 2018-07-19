@@ -149,10 +149,23 @@
      minimum distance. So it turns out that if we are running algorithm as a sweepline, then we have parabolas.
      "]]])
 
-
-(defn animation-playground []
-  [page (playground/new-app-thing [:playground/builder])
+(defn references-body []
+  [rc/v-box
+   :align :center
+   :children
+   [[rc/title :level :level2 :label "References"]
+    [bulleted-list
+     [[:a {:href "https://visionscarto.net/the-state-of-d3-app"}
+       "A wonderful writeup by Philippe Rivi\u00e8re"]
+      ]
+     "D3 Voronoi"
+     "D3 geo"
+     "The census data source"
+     "The map data"]]])
+(defn references []
+  [page references-body
    :prev {:text "Examples" :href "#/examples"}])
+
 
 (defn intro-page []
   [page intro
@@ -172,3 +185,8 @@
   [page examples/examples-page
    :prev {:text "About Voronoi Diagrams" :href "#/app-diagrams"}
    :next {:text "Animations" :href "#/animation-playground"}])
+
+(defn animation-playground []
+  [page (playground/new-app-thing [:playground/builder])
+   :prev {:text "Examples" :href "#/examples"}
+   :next {:text "References" :href "#/references"}])

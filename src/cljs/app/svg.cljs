@@ -60,18 +60,40 @@
 (defn polygon-points [points]
   (string/join " " (map #(str (:x %) "," (:y %)) points)))
 
+(rf/reg-fx
+  :register-polygon-handler
+  (fn [{:keys [id handler]}]
+    (rf/dispatch [:register-polygon-handler id handler])))
+
+(rf/reg-event-db
+  :register-polygon-handler
+  (fn [db [_ id handler]]
+    (update db :polygon-handlers
+            (fn [handlers]
+              (assoc (if (nil? handlers ) {} handlers) id handler)))))
+
+(rf/reg-sub
+  :polygon-handler
+  (fn [db [_ q]]
+    (println "asdf " q (get-in db [:polygon-handlers q]))
+    (if-let [h (get-in db [:polygon-handlers q])]
+      h
+      [:polygon-over])))
+
 (rf/reg-sub
   ::voronoi-polygons
   (fn [[_ q] _]
-    (rf/subscribe q))
-  (fn [ vor _]
+    [(rf/subscribe q)
+     (rf/subscribe [:polygon-handler q])])
+  (fn [[vor h] [_ q]]
+    (println h q)
     (some->> vor
              (vor/polygons)
              (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)))
              (map-indexed
                (fn [i {points :cell site :site}]
                  ^{:key i} [:polygon {:points        (polygon-points points)
-                                      :on-mouse-over #(rf/dispatch [:polygon-over site])
+                                      :on-mouse-over #(rf/dispatch [h site])
                                       :on-click      (fn [] nil)}]))
              (into [:g.finished]))))
 
@@ -88,20 +110,17 @@
   (fn []
     @(rf/subscribe [::voronoi-completed q])))
 
-(defn svg [data & {:keys [event-ns events]}])
-
-(defn voronoi-group
-  [q]
-  [:g
-   [voronoi-polygons q]
-   [voronoi-points q]
-   [voronoi-completed q]])
 
 (defn voronoi-group-im
   [q]
   [:g
    [voronoi-polygons q]
    [voronoi-points q]])
+
+(defn voronoi-group
+  [q]
+  (into (voronoi-group-im q)
+        [voronoi-completed q]))
 
 (defn view-box-extent [extent widen]
   (let [[xmin xmax ymin ymax] (point/widen-by-percent extent widen)]

@@ -5,7 +5,7 @@
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
             [app.components :as components]
-            [app.us-map.events]
+            [app.us-map.events :as us-map]
             [app.playground.events]
             [app.slides.events :as slides]
             [app.examples.examples :as examples]))
@@ -21,6 +21,9 @@
 
 (secretary/defroute examples-p "/examples" []
                     (rf/dispatch [:page [:tests]]))
+
+(secretary/defroute references "/references" []
+                    (rf/dispatch [:page [:references]]))
 
 (secretary/defroute animation-page "/animation-playground" []
                     (rf/dispatch [:page [:playground]]))
@@ -53,6 +56,7 @@
                        :voronoi-diagrams-intro #'components/voronoi-diagrams
                        :tests #'examples-page
                        :playground #'animation-playground-page
+                       :references #'components/references
                        :map #'map-page})))
 
 (rf/reg-event-db
@@ -91,8 +95,7 @@
        (secretary/locate-route path))})
   (accountant/dispatch-current!)
   (rf/dispatch [:initialize])
-  (rf/dispatch [:us-map/fetch-city-data])
-  (rf/dispatch [:us-map/fetch-map-data])
+  (rf/dispatch [::us-map/initialize])
   (rf/dispatch [::examples/initialize])
   (rf/dispatch [::slides/initialize])
   (rf/dispatch [:playground/initialize])

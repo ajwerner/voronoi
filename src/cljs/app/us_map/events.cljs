@@ -11,6 +11,20 @@
     (println x)
     co))
 
+(rf/reg-event-fx
+  ::initialize
+  (fn [{db :db} _]
+    {:db db
+     ::initialize {}}))
+
+(rf/reg-fx
+  ::initialize
+  (fn [_ _]
+    (rf/dispatch [:us-map/fetch-city-data])
+    (rf/dispatch [:us-map/fetch-map-data])
+    (rf/dispatch [:register-polygon-handler [:us-map/map-vor] :us-map/polygon-over])))
+
+
 ;; ----------------------------------------------------------------
 ;; City data parsing
 ;;
@@ -85,6 +99,19 @@
 ;;
 
 (rf/reg-event-db
+  :us-map/polygon-over
+  (fn [db [_ site]]
+    (assoc db :us-map/cur-city site)))
+
+(rf/reg-event-fx
+  :us-map/set-top-nx
+  (fn [{db :db} [_ n]]
+    (let [db (assoc db :us-map/top-n n)
+          year (:us-map/year db)
+          vor (get-in db [:us-map/vor year n])]
+      (cond-> {:db db}))))
+
+(rf/reg-event-db
   :us-map/set-top-n
   (fn [db [_ n]]
     (assoc db :us-map/top-n n)))
@@ -97,4 +124,5 @@
 (rf/reg-event-db
   :us-map/polygon-over
   (fn [db [_ site]]
+    (println site)
     (assoc db :us-map/cur-city site)))

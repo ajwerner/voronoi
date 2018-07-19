@@ -163,7 +163,4 @@
        :justify :start
        :children
        [[interactive-svg id]
-        [control-bar id]]])
-    ;[control-panel]
-    ;[arc-table-and-toggle]
-    ))
+        [control-bar id]]])))

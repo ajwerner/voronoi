@@ -8,6 +8,7 @@
 (def ak-hi-names
   #{"Alaska" "Hawaii"})
 
+
 (rf/reg-sub
   :us-map/map-data-ready?
   (fn [db _]
