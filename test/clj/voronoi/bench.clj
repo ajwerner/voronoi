@@ -1,6 +1,6 @@
 (ns voronoi.bench
   (:require [clojure.test :refer [deftest run-tests run-all-tests is]]
-            [voronoi.voronoi :as vor]
+            [voronoi.core :as vor]
             [voronoi.points :as points]
             [criterium.core :as criterium]))
 

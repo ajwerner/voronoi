@@ -107,6 +107,7 @@
               :pretty-print  true
               :npm-deps {:topojson "3.0.2"}
               :install-deps true
+              :preloads [day8.re-frame-10x.preload]
               :closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}
               }}}
    }

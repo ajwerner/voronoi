@@ -1,5 +1,5 @@
 (ns app.control
-  (:require [voronoi.voronoi :as vor]))
+  (:require [voronoi.core :as vor]))
 
 (defn do-step! [state-atom]
   (swap! state-atom #(update % :voronoi vor/handle-event)))

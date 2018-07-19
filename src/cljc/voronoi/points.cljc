@@ -1,7 +1,7 @@
 (ns voronoi.points
   (:require [voronoi.util :refer [PI cos sin random]]))
 
-(def canvas-size [700 700])
+(def canvas-size [400 400])
 
 (defn point-list-to-point [[x y]] {:x x :y y})
 

@@ -4,57 +4,32 @@
             [re-frame.core :as rf]
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
-            [voronoi.voronoi :as vor]
-            [app.control :refer [reset-state!]]
-            [voronoi.points :as p]
             [app.components :as components]
-            [app.components.us-map :as us-map]
-            [app.components.examples :as examples]))
+            [app.us-map.events]
+            [app.playground.events]
+            [app.slides.events :as slides]
+            [app.examples.examples :as examples]))
 
 ;; -------------------------
 ;; Routing
 
 (secretary/defroute map-p #"/(map)?" []
-  (rf/dispatch [:page :map]))
+                    (rf/dispatch [:page [:map]]))
 
 (secretary/defroute intro-p #"/intro" []
-  (rf/dispatch [:page :intro]))
+                    (rf/dispatch [:page [:intro]]))
 
 (secretary/defroute examples-p "/examples" []
-  (rf/dispatch [:page :tests]))
+                    (rf/dispatch [:page [:tests]]))
 
 (secretary/defroute animation-page "/animation-playground" []
-  (rf/dispatch [:page :playground]))
+                    (rf/dispatch [:page [:playground]]))
 
 (secretary/defroute voronoi-description "/app-diagrams" []
-  (rf/dispatch [:page :voronoi-diagrams-intro]))
+                    (rf/dispatch [:page [:voronoi-diagrams-intro]]))
 
-
-;; -------------------------
-;; State
-
-(defonce app-state (atom {:animation-page nil
-                          :examples nil
-                          :map-page {:outline nil
-                                     :data nil}}))
-
-;; -------------------------
-;; Event handlers
-
-(rf/reg-event-fx
- :initialize
- (fn [db  _]
-   db))
-
-
-(rf/reg-event-db
- :page
- (fn [db [_ new-page]]
-   (assoc db :page new-page)))
-
-(rf/reg-sub
- :current-page
- (fn [db _] (:page db)))
+(secretary/defroute slides "/slides/:i" [i]
+                    (rf/dispatch [:page [:slides i]]))
 
 (secretary/set-config! :prefix "#")
 
@@ -62,27 +37,41 @@
 ;; Views
 ;; -------------------------
 
-(reagent/cursor app-state [:animation-page])
-
 (defonce examples-page #(components/examples-page))
 
 (defonce map-page #(components/map-page))
 
-(defonce animation-playground-page
-  #(components/animation-playground
-    (reagent/cursor app-state [:animation-page])))
+(defonce animation-playground-page #(components/animation-playground))
 
-(def routes
-  {:intro #'components/intro-page
-   :voronoi-diagrams-intro #'components/voronoi-diagrams
-   :tests #'examples-page
-   :playground #'animation-playground-page
-   :map #'map-page})
+;; -------------------------
+;; Event handlers
+
+(rf/reg-event-db
+  :initialize
+  (fn [db  _]
+    (assoc db :routes {:intro  #'components/intro-page
+                       :voronoi-diagrams-intro #'components/voronoi-diagrams
+                       :tests #'examples-page
+                       :playground #'animation-playground-page
+                       :map #'map-page})))
+
+(rf/reg-event-db
+  :page
+  (fn [db [_ new-page]]
+    (assoc db :page new-page)))
+
+(rf/reg-sub
+  :page
+  (fn [db _]
+    (if-let [page-vec (:page db)]
+      (into [((first page-vec) (:routes db))]
+              (rest page-vec))
+      [app.us-map.views/loading])
+    ))
 
 (defn ui []
-  [:div
-   (if-let [p @(rf/subscribe [:current-page])]
-     [(p routes)])])
+  (fn []
+    (if-let [p @(rf/subscribe [:page])] [:div p] [:div])))
 
 ;; -------------------------
 ;; Initialize app
@@ -102,9 +91,11 @@
        (secretary/locate-route path))})
   (accountant/dispatch-current!)
   (rf/dispatch [:initialize])
-  (rf/dispatch [::us-map/get-city-data])
-  (rf/dispatch [::us-map/get-map-data])
+  (rf/dispatch [:us-map/fetch-city-data])
+  (rf/dispatch [:us-map/fetch-map-data])
   (rf/dispatch [::examples/initialize])
+  (rf/dispatch [::slides/initialize])
+  (rf/dispatch [:playground/initialize])
   (mount-root))
 
 (defn ^:export main [] (init!))

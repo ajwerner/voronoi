@@ -1,7 +1,7 @@
 (ns voronoi.basic
   (:require #?(:clj [clojure.test :refer [deftest run-tests run-all-tests is]]
                :cljs [cljs.test :refer-macros [deftest is testing run-tests run-all-tests]])
-            [voronoi.voronoi :as vor]
+            [voronoi.core :as vor]
             [voronoi.points :as points]))
 
 (deftest test-it

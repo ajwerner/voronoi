@@ -1,12 +1,12 @@
-(ns app.components.examples
+(ns app.examples.examples
   (:require-macros [cljs.core.async :refer [go]])
   (:require [voronoi.points :as points]
             [re-frame.core :as rf]
-            [voronoi.voronoi :as vor]
-            [app.components.svg :as svg]
+            [voronoi.core :as vor]
+            [app.svg :as svg]
             [re-com.core :as rc]))
 
-(def misc-state
+(def example-data
   [{:id     :crazy
     :points points/some-cool-stuff}
    {:id     :random
@@ -58,7 +58,7 @@
   ::initialize
   (fn [_ _]
     (doall
-      (for [d misc-state]
+      (for [d example-data]
         (let []
           (rf/dispatch [::ev-load-example d]))))))
 
@@ -102,8 +102,17 @@
     [rc/box
      :align :center
      :size "1"
+     :margin "auto"
      :max-height "93vmin"
-     :child [svg/voronoi-svg (rf/subscribe [::tab-vor])]]))
+     :child [svg/voronoi-svg [::tab-vor]]]))
+
+
+(rf/reg-sub
+  ::view-box
+  (fn [[_ id]]
+    (rf/subscribe id))
+  (fn [vor _]
+    (svg/view-box-extent (:extent vor) 10)))
 
 (rf/reg-sub
   ::tabs
@@ -126,8 +135,10 @@
 (defn examples-controller []
   [rc/box
    :width "150px"
+   :margin "auto"
    :max-height "94vh"
-   :justify :center
+   :justify :start
+
    :style {:overflow "auto"}
    :child
    [rc/vertical-bar-tabs

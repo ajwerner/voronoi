@@ -1,41 +1,25 @@
 (ns app.components
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as reagent :refer [atom]]
-            [voronoi.voronoi :as vor]
+            [voronoi.core :as vor]
             [voronoi.points :as points]
             [app.components.arc-table :refer [arc-table-and-toggle]]
-            [app.components.svg :refer [voronoi-svg interactive-svg voronoi-group]]
             [app.components.events-panel :refer [events-panel]]
             [app.components.control-panel :refer [control-panel]]
-            [app.components.examples :as examples]
-            [app.components.us-map :as us-map]
+            [app.examples.examples :as examples]
+            [app.slides.events :as slides]
+            [app.playground.events]
+            [app.playground.subs]
+            [app.slides.events]
+            [app.slides.subs]
+            [app.us-map.views :as us-map]
+            [app.playground.views :as playground]
             [re-com.core :as rc]
             [re-com.util :as rc-util]))
 
-(defonce initial-points points/some-cool-stuff)
 
-(defn new-app-thing [db id]
-  (swap! db #(if % % {:voronoi (vor/new-voronoi-builder initial-points)
-                      :id      id
-                      :scroll  nil}))
-  (let [vor (reagent/cursor db [:voronoi])
-        scroll (reagent/cursor db [:scroll])]
-    (fn []
-      [:section.voronoi-widget {:id id}
-       [:div.graphics
-        {:style {:position "fixed"
-                 :overflow "hidden"}}
-        [interactive-svg vor scroll]]
-       [control-panel db]
-       [arc-table-and-toggle vor]])))
 
-(defn animation-playground [db]
-  (let []
-    (fn []
-      [:div [:h2 "Voronoi diagrams"]
-       [:div [:p "Just a pretty picture for now"]]
-       [new-app-thing db "animation-playground"]
-       [:div [:a {:href "#/examples"} "<- Examples"]]])))
+
 
 (defn bulleted-list [& li-text-items]
   [:ul (map #(into ^{:key %} [:li] %) li-text-items)])
@@ -93,7 +77,9 @@
    :align :center
    :child
    [rc/v-box
-    :max-width "100vw"
+    :max-width "450px"
+    :style {:padding-left  "5px"
+            :padding-right "5px"}
     :children
     [[rc/title :level :level1 :label "Voronoi Diagrams"]
      [rc/title :level :level2 :label "What is this?"]
@@ -116,7 +102,7 @@
       "and the"
       [:a {:href "https://visionscarto.net/the-state-of-d3-app"}
        " wonderful writeup by Philippe Rivi\u00e8re"]
-      ". For almost all practical use cases, D3 will be a better choice for a variety of reasons.
+      ". Probably for all practical use cases, D3 will be a better choice for a variety of reasons.
       One could argue that much of the code in this project is just an ad-hoc re-implementation of
       functionality found in D3. This project was an outlet for me to improve my ability to express
       myself visually with code and to grapple with the challenges of building UI. I hope you enjoy it
@@ -126,8 +112,17 @@
       "Despite not being ground-breaking, there are some things that this implementations sets out to do that hopefully
       make it a little interesting. We'll explore those a little bit on later pages."]
      [bulleted-list
-      [p "Careful handling of co-circular and co-linear points"]
-      "Exposed algorithm state for pedagogical and artistic properties."]]]])
+      "Careful handling of co-circular and co-linear points"
+      "Exposed algorithm state for pedagogical and artistic properties."
+      ]
+     [rc/title :level :level3 :label "What else?"]
+     [p
+      "There's a bunch of stuff still to do"]
+     [bulleted-list
+      "Better handling of very near points"
+      "Some clipping things for edge cases where the top and bottom
+      edges or right and stuff"
+      ]]]])
 
 (defn about-diagrams []
   [rc/v-box
@@ -137,13 +132,15 @@
     [p
      "Say you have a bunch of points in plane.
       Maybe these bare cities on a map*
-      And you want to know the area closest to each city based on distance.
-      Voronoi diagrams are your tool"]
-    [p
-     "A common use case for these diagrams are to create tooltips for graphs.
-     Efficient algorithms exist to find which polygon in a set contain some point
-     (See point containment search, these are actually easy to make much faster when you can ensure that the polygons do not overlap).
-     See BSP trees."]
+      and you want to know the area closest to each city based on distance.
+      Voronoi diagrams are your tool."]
+    [rc/box
+     :max-height "500px"
+     :height "100%"
+     :width "100%"
+     :size "auto"
+     :child
+     [playground/new-app-thing [:slides/builder]]]
     [p
      "The goals of the diagram is to split the plane in to non-overlapping convex polygons which each
      The basic principle here is that the cells represent the set of points which are closest
@@ -151,6 +148,11 @@
      the minimum distance to that points. That means the boundaries of cells are the set of points which have an equal
      minimum distance. So it turns out that if we are running algorithm as a sweepline, then we have parabolas.
      "]]])
+
+
+(defn animation-playground []
+  [page (playground/new-app-thing [:playground/builder])
+   :prev {:text "Examples" :href "#/examples"}])
 
 (defn intro-page []
   [page intro

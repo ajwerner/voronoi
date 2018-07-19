@@ -1,4 +1,4 @@
-(ns voronoi.voronoi
+(ns voronoi.core
   (:require [voronoi.builder :as builder]
             [voronoi.diagram :as diagram]))
 

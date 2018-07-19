@@ -1,5 +1,5 @@
 (ns app.components.events-panel
-  (:require [voronoi.voronoi :as vor]
+  (:require [voronoi.core :as vor]
             [voronoi.event :as event]))
 
 (defn event-row [ev]
