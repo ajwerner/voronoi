@@ -75,10 +75,8 @@
 (rf/reg-sub
   :polygon-handler
   (fn [db [_ q]]
-    (println "asdf " q (get-in db [:polygon-handlers q]))
     (if-let [h (get-in db [:polygon-handlers q])]
-      h
-      [:polygon-over])))
+      h)))
 
 (rf/reg-sub
   ::voronoi-polygons
@@ -86,17 +84,15 @@
     [(rf/subscribe q)
      (rf/subscribe [:polygon-handler q])])
   (fn [[vor h] [_ q]]
-    (println h q)
     (some->> vor
              (vor/polygons)
              (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)))
              (map-indexed
                (fn [i {points :cell site :site}]
                  ^{:key i} [:polygon {:points        (polygon-points points)
-                                      :on-mouse-over #(rf/dispatch [h site])
+                                      :on-mouse-over #(if h (rf/dispatch [h site]))
                                       :on-click      (fn [] nil)}]))
              (into [:g.finished]))))
-
 
 (defn voronoi-polygons [q]
   (fn []
@@ -119,8 +115,10 @@
 
 (defn voronoi-group
   [q]
-  (into (voronoi-group-im q)
-        [voronoi-completed q]))
+  [:g
+   [voronoi-points q]
+   [voronoi-completed q]
+   [voronoi-polygons q]])
 
 (defn view-box-extent [extent widen]
   (let [[xmin xmax ymin ymax] (point/widen-by-percent extent widen)]

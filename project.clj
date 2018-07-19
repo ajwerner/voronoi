@@ -29,8 +29,7 @@
                  [cljs-ajax "0.7.3"]
                  [ring/ring-defaults "0.3.1"]
                  [cljs-http "0.1.45"]
-                 [re-frame "0.10.5"]
-                 [re-pressed "0.2.2"]]
+                 [re-frame "0.10.5"]]
 
   :plugins [[lein-environ "1.1.0"]
             [lein-cljsbuild "1.1.7"]

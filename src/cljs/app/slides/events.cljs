@@ -2,13 +2,14 @@
   (:require [re-frame.core :as rf]
             [voronoi.core :as vor]
             [voronoi.points :as points]
+            [app.slides.db :as db]
             [app.playground.events]))
 
 (rf/reg-event-db
   ::initialize
   (fn [db _]
     (assoc db :slides/builder
-              (vor/new-voronoi-builder (points/random-points 45)))))
+           (vor/new-voronoi-builder (points/random-points 100)))))
 
 (rf/reg-event-db
   :stop-builder
@@ -19,18 +20,11 @@
   :play-builder
   [(rf/inject-cofx :now)]
   (fn [{db :db now :now} [_ id & {:keys [rate interval]
-                                  :or {rate 30
+                                  :or {rate 50
                                        interval 16}}]]
     (if-let [s (get-in db [:play-builder id])]
       {:db db}
-      {:db        (update db :play-builder
-                          (fn [bp]
-                            (let [v {:rate rate
-                                     :interval interval
-                                     :last now}]
-                              (if (some? bp)
-                                (assoc bp id v)
-                                {id v}))))
+      {:db (db/start-builder db id rate interval now)
        :run-timer {:id    id
                    :start now
                    :wait  0
@@ -40,26 +34,33 @@
 (rf/reg-event-db
   :reset-builder
   (fn [db [_ id]]
-    (assoc-in
-      (-> db (update-in id vor/reset-to 0))
-      [:play-builder id]
-      nil)))
+    (db/reset-builder db id)))
 
 (rf/reg-event-fx
-  :update-builder
-  [(rf/inject-cofx :now)]
+ :update-builder
+ [(rf/inject-cofx :now)]
   (fn [{db :db now :now} [_ id & {:keys [start took vor]}]]
-    (let [{:keys [last interval rate] :as s} (get-in db [:play-builder id])]
-      (if (or (nil? s)
-              (not= last start))
-        {:db db}
-        (-> {:db (assoc-in db id vor)}
-            (assoc-in [:db :play-builder id :last] now)
-            (assoc :run-timer {:id    id
-                               :rate rate
-                               :start now
-                               :wait  (max 0 (- interval took))
-                               :cur   vor}))))))
+    (let [db (db/update-builder db id start vor now)
+          {:keys [last rate interval]} (db/play-state db id)]
+      (cond-> {:db db}
+        (= last now)
+        (assoc :run-timer
+               {:id    id
+                :rate rate
+                :start now
+                :wait  (max 0 (- interval took))
+                :cur   vor})))))
+
+(rf/reg-event-db
+ :builder/next-event
+ (fn [db [_ id]]
+   (db/builder-next db id)))
+
+(rf/reg-event-db
+ :builder/prev-event
+ (fn [db [_ id]]
+   (db/builder-prev db id)))
+
 
 (defn now []
   (.now js/Date))
@@ -67,7 +68,6 @@
 (rf/reg-fx
   :run-timer
   (fn [{:keys [id start wait cur rate] :as args} _]
-    ;; (println "running it " wait start rate)
     (-> (fn []
           (let [t (now)
                 delta-t (- t start)
@@ -76,4 +76,3 @@
                 took (- (now) t)]
             (rf/dispatch [:update-builder id :took took :vor s :start start])))
         (js/setTimeout wait))))
-

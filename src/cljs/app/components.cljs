@@ -17,10 +17,6 @@
             [re-com.core :as rc]
             [re-com.util :as rc-util]))
 
-
-
-
-
 (defn bulleted-list [& li-text-items]
   [:ul (map #(into ^{:key %} [:li] %) li-text-items)])
 
@@ -56,7 +52,6 @@
      :min-height "94vh"
      :size "auto"
      :width "100%"
-     :style {:overflow "auto"}
      :child [content]]
     [links prev next]]])
 
@@ -66,10 +61,10 @@
                        [c1 (rest children)]
                        [{} children])
         m (rc-util/deep-merge
-            {:style {:max-width "98vw"
-                     :min-width "300px"
-                     :margin "auto"}}
-            m)]
+           {:style {:max-width "98vw"
+                    :min-width "300px"
+                    :margin "auto"}}
+           m)]
     (into [rc/p m] children)))
 
 (defn intro []
@@ -81,8 +76,7 @@
     :style {:padding-left  "5px"
             :padding-right "5px"}
     :children
-    [[rc/title :level :level1 :label "Voronoi Diagrams"]
-     [rc/title :level :level2 :label "What is this?"]
+    [[rc/title :level :level1 :label "What is this?"]
      [p
       "This post is primarily about Voronoi diagram but along the way it's also about:"]
      [bulleted-list
@@ -90,6 +84,17 @@
       "React/Reagent and Single Page applications"
       "Drawing in the browser (Processing/Quil and SVGs)"
       "Robust geometric predicates with floating point"]
+     [rc/title :level :level3 :label "Why did I do it?"]
+     [p
+      "Around winter I was expressing to my friend Nik that, despite all the time I've spent writing code as a programmer, I felt woefully unable to express
+      ideas visually with code. When it comes to sharing interactive media, today's lingua franca is the web.
+      He has long raved about the value of tight feedback loop when programming, especially visual programming (check out his stuff TODO: add link)
+      His suggestion was that I look into Clojure and ClojureScript as a productive and clean approach to UI development."]
+     [p
+      "That explains how I started messing around in Clojure, but as for why the Voronoi Diagrams, that has to do with a project I did in college. Around Christmas I worked my way through the Advent of Code in Clojure as a way of introducing myself to the langauge. Around the same time, I got an email about a Github star and then an issue on "
+      [:a {:href "https://github.com/ajwerner/fortune"} "a Java implementation of Fortune's algoithm"]
+      " that I had largely forgotten about (maybe for good reason)."]
+
      [rc/title :level :level3 :label "What is this not?"]
      [p
       "Novel, this project has no particularly novel contributions to offer to the world.
@@ -130,24 +135,37 @@
    :children
    [[rc/title :level :level1 :label "What's a Voronoi Diagram?"]
     [p
-     "Say you have a bunch of points in plane.
-      Maybe these bare cities on a map*
+     "Say you have a bunch of points in plane which we'll call sites.
+      Maybe those sites correspond to cities projected onto a map.
+      Then say you have some other point and you'd like to know the site to
+      which it is the closest.
+      The Voronoi diagram might be able to help you.
+      A Voronoi diagram is a space partitioning algorithm which breaks a space into
+      non-overlapping convex polygons where each corresponds to a site such that
+      all points inside the polygon are closest to that site.
+      For the rest of the discussion, we'll assume we're only dealing in 2D
+      with Euclidean distance.
       and you want to know the area closest to each city based on distance.
       Voronoi diagrams are your tool."]
+    [p
+     "The algorithm this project explores is attributed to Steve Fortune (TODO: add citation)
+      and thus is called Fortune's algorithm.
+      The basic principle here is that the cells represent the set of points which are closest
+     to the point contained by them. In other words, the interior of a cell represents the set of points
+     the minimum distance to that points. That means the boundaries of cells are the set of points which have an equal
+     minimum distance. Let's look at the algorithm running and then talk about what's going on.
+     "]
     [rc/box
      :max-height "500px"
      :height "100%"
      :width "100%"
+     :max-width "800px"
      :size "auto"
      :child
      [playground/new-app-thing [:slides/builder]]]
     [p
-     "The goals of the diagram is to split the plane in to non-overlapping convex polygons which each
-     The basic principle here is that the cells represent the set of points which are closest
-     to the point contained by them. In other words, the interior of a cell represents the set of points
-     the minimum distance to that points. That means the boundaries of cells are the set of points which have an equal
-     minimum distance. So it turns out that if we are running algorithm as a sweepline, then we have parabolas.
-     "]]])
+     "If you remember back to high school math, a parabola is defined as the set of points equidistant from a point (focus) and a line (directrix). In this example, the sites are the foci and the sweep-line is the directrix. This ends up having nice properties in that the points on the Voronoi edges are traced out by the evolution of the parabolas as the sweep-line progresses across the plane."]
+    ]])
 
 (defn references-body []
   [rc/v-box
@@ -165,7 +183,6 @@
 (defn references []
   [page references-body
    :prev {:text "Examples" :href "#/examples"}])
-
 
 (defn intro-page []
   [page intro

@@ -6,6 +6,7 @@
             [voronoi.arc :as arc]
             [app.playground.subs]
             [app.playground.events]
+            [app.slides.subs]
             [voronoi.break-point :as bp]
             [re-com.core :as rc]))
 
@@ -77,7 +78,7 @@
         {px :x py :y} (bp/break-point-point bp y)]
     ^{:key bp} (line  bx by px py {:stroke (if (= :left (:side bp))
                                              "red"
-                                             "cyan")})))
+                                             "magenta")})))
 
 (defn draw-breaks [breaks y]
   [:g
@@ -132,12 +133,31 @@
      :child (if @(rf/subscribe [:builder/running? id])
               [rc/md-icon-button
                :md-icon-name "zmdi-pause"
-               :on-click #(rf/dispatch [:stop-builder id])
-               :style {:width "100%"}]
+               :on-click #(rf/dispatch [:stop-builder id])]
               [rc/md-icon-button
                :md-icon-name "zmdi-play"
-               :on-click #(rf/dispatch [:play-builder id])
-               :style {:width "100%"}])]))
+               :on-click #(rf/dispatch [:play-builder id])])]))
+
+(defn next-button [id]
+  (fn []
+    [rc/box
+     :size "0 1 auto"
+     :child
+     [rc/md-icon-button
+      :md-icon-name "zmdi-arrow-right"
+      :disabled? (not @(rf/subscribe [:builder/can-next? id]))
+      :on-click #(rf/dispatch [:builder/next-event id])]]))
+
+(defn prev-button [id]
+  (fn []
+    [rc/box
+     :size "0 1 auto"
+     :child
+     [rc/md-icon-button
+      :md-icon-name "zmdi-arrow-left"
+      :disabled? (not @(rf/subscribe [:builder/can-prev? id]))
+      :on-click #(rf/dispatch [:builder/prev-event id])
+      ]]))
 
 (defn control-bar [id]
   (fn []
@@ -145,7 +165,9 @@
      :size "1 0 auto"
      :justify :start
      :children
-     [[play-pause-button id]
+     [[prev-button id]
+      [next-button id]
+      [play-pause-button id]
       [reset-button id]
       [rc/gap :size "1"]
       [rc/box
@@ -158,7 +180,7 @@
        :size "auto"
        :width "100%"
        :height "100%"
-       :max-width "550px"
+       :max-height "93vh"
        :margin "auto"
        :justify :start
        :children

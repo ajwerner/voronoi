@@ -10,7 +10,6 @@
   (fn [co x]
     (println x)
     co))
-
 (rf/reg-event-fx
   ::initialize
   (fn [{db :db} _]
@@ -124,5 +123,4 @@
 (rf/reg-event-db
   :us-map/polygon-over
   (fn [db [_ site]]
-    (println site)
     (assoc db :us-map/cur-city site)))
