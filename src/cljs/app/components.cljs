@@ -86,9 +86,13 @@
       "Robust geometric predicates with floating point"]
      [rc/title :level :level3 :label "Why did I do it?"]
      [p
-      "Around winter I was expressing to my friend Nik that, despite all the time I've spent writing code as a programmer, I felt woefully unable to express
-      ideas visually with code. When it comes to sharing interactive media, today's lingua franca is the web.
-      He has long raved about the value of tight feedback loop when programming, especially visual programming (check out his stuff TODO: add link)
+      "Around winter I was expressing to my friend "
+      [:a {:href "https://twitter.com/snikhilesh"} "Nik"]
+      " that, despite all the time
+      I've spent writing code as a programmer, I felt woefully unable to express
+      ideas visually with code. When it comes to sharing interactive media, today's
+      lingua franca is the web.
+      Nik raved about the value of tight feedback loop when programming, especially visual programming.
       His suggestion was that I look into Clojure and ClojureScript as a productive and clean approach to UI development."]
      [p
       "That explains how I started messing around in Clojure, but as for why the Voronoi Diagrams, that has to do with a project I did in college. Around Christmas I worked my way through the Advent of Code in Clojure as a way of introducing myself to the langauge. Around the same time, I got an email about a Github star and then an issue on "
@@ -145,17 +149,11 @@
       non-overlapping convex polygons where each corresponds to a site such that
       all points inside the polygon are closest to that site.
       For the rest of the discussion, we'll assume we're only dealing in 2D
-      with Euclidean distance.
-      and you want to know the area closest to each city based on distance.
-      Voronoi diagrams are your tool."]
-    [p
-     "The algorithm this project explores is attributed to Steve Fortune (TODO: add citation)
-      and thus is called Fortune's algorithm.
-      The basic principle here is that the cells represent the set of points which are closest
-     to the point contained by them. In other words, the interior of a cell represents the set of points
-     the minimum distance to that points. That means the boundaries of cells are the set of points which have an equal
-     minimum distance. Let's look at the algorithm running and then talk about what's going on.
-     "]
+      with Euclidean distance. The algorithm this project explores is attributed to "
+     [:a {:href "http://portal.acm.org/citation.cfm?id=10549"} "Steve Fortune"]
+     " and thus is called "
+     [:a {:href "https://en.wikipedia.org/wiki/Fortune%27s_algorithm"} "Fortune's algorithm"]
+     ". Let's look at the algorithm running and then talk about what's going on. "]
     [rc/box
      :max-height "500px"
      :height "100%"
@@ -174,20 +172,23 @@
    :children
    [[rc/title :level :level2 :label "References"]
     [bulleted-list
-     ["A wonderful writeup by Philippe Rivi\u00e8re "
+     ["The implementation of Voronoi diagrams you should likely use on web pages. "
+      [:a {:href "https://github.com/d3/d3-voronoi"} "d3 Voronoi"]]
+     ["A wonderful writeup by Philippe Rivi\u00e8re. "
       [:a {:href "https://visionscarto.net/the-state-of-d3-voronoi"}
        "The state of d3 Voronoi"]]
-     ["The implementation of Voronoi diagrams you should likely use on web pages "
-      [:a {:href "https://github.com/d3/d3-voronoi"}
-       "d3 Voronoi"]]
-     ["A great library for dealing with GeoJSON "[:a {:href "https://github.com/d3/d3-geo"}
-       "d3 Geo"]]
+     ["A great library for dealing with GeoJSON. "
+      [:a {:href "https://github.com/d3/d3-geo"} "d3 Geo"]]
      ["GeoJSON for the US "[:a {:href "http://eric.clst.org/tech/usgeojson/"}
        "GeoJSON and KML Data For The United States"]]
-     ["Historical census data driving the interactive map "
+     ["Historical census data driving the interactive map. "
       [:a {:href "https://github.com/cestastanford/historical-us-city-populations"}
-       "United States Historical City Populations, 1790-2010"]
-      ]]]])
+       "United States Historical City Populations, 1790-2010"]]
+     ["The book from which my original Java implementation was derived. "
+      [:a {:href "http://www.amazon.com/Computational-Geometry-Applications-Mark-Berg/dp/3642096816"}
+       "Computational Geometry: Algorithms & Applications"]]
+     ["My Java implementation from college which is faster but more broken. "
+      [:a {:href "https://github.com/ajwerner/fortune"}  "https://github.com/ajwerner/fortune"]]]]])
 
 (defn references []
   [page references-body
