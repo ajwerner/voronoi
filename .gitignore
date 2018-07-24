@@ -17,3 +17,5 @@ pom.xml.asc
 /.env
 /.sass-cache
 /.idea
+node_modules
+
