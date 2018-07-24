@@ -174,12 +174,15 @@
    [[rc/title :level :level2 :label "References"]
     [bulleted-list
      [[:a {:href "https://visionscarto.net/the-state-of-d3-app"}
-       "A wonderful writeup by Philippe Rivi\u00e8re"]
-      ]
-     "D3 Voronoi"
-     "D3 geo"
-     "The census data source"
-     "The map data"]]])
+       "A wonderful writeup by Philippe Rivi\u00e8re"]]
+     [:a {:href "https://github.com/d3/d3-voronoi"}
+      "D3 Voronoi"]
+     [:a {:href "https://github.com/d3/d3-geo"}
+      "D3 Geo"]
+     [:a {:href "http://eric.clst.org/tech/usgeojson/"}
+      "GeoJSON and KML Data For The United States"]
+     [:a {:href "https://github.com/cestastanford/historical-us-city-populations"}
+      "United States Historical City Populations, 1790-2010"]]]])
 (defn references []
   [page references-body
    :prev {:text "Examples" :href "#/examples"}])
