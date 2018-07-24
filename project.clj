@@ -76,14 +76,14 @@
               :source-map       "target/cljsbuild/public/js/app.js.map"
               :optimizations :advanced
               :pretty-print  false}}
-            :gh-page
+            :gh-pages
             {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
 
              :compiler
              {:main             "app.core"
-              :output-to        "docs/js/app.js"
-              :output-dir       "docs/js"
-              :source-map       "docs/js/app.js.map"
+              :output-to        "js/app.js"
+              :output-dir       "js"
+              :source-map       "js/app.js.map"
               :optimizations :advanced
               :pretty-print true
               :pseudo-names true
