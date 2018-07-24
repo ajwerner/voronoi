@@ -73,9 +73,20 @@
       [app.us-map.views/loading])
     ))
 
+(defn ui-comp [p]
+  (let [ref (atom nil)]
+    (reagent/create-class
+     {:component-did-update
+      (fn [this]
+        (if-let [r @ref]
+          (.scrollIntoView r true)))
+      :reagent-render
+      (fn [p] (if p
+                [:div {:ref (fn [com] (reset! ref com))} p]
+                [:div]))})))
+
 (defn ui []
-  (fn []
-    (if-let [p @(rf/subscribe [:page])] [:div p] [:div])))
+  (fn [] [ui-comp @(rf/subscribe [:page])]))
 
 ;; -------------------------
 ;; Initialize app
