@@ -99,7 +99,8 @@
      [p
       "Novel, this project has no particularly novel contributions to offer to the world.
        Any seemingly deep insight was much more deeply pursued by somebody else.
-       I'll try to point references to some things which I glanced at but often gave up on understanding completely for the moment."]
+       I'll try to point references to some things which I glanced at but often
+       gave up on understanding completely for the moment."]
      [p
       " I  particularly want to highlight the work in"
       [:a {:href "https://github.com/d3/d3-app"}
@@ -173,16 +174,21 @@
    :children
    [[rc/title :level :level2 :label "References"]
     [bulleted-list
-     [[:a {:href "https://visionscarto.net/the-state-of-d3-app"}
-       "A wonderful writeup by Philippe Rivi\u00e8re"]]
-     [:a {:href "https://github.com/d3/d3-voronoi"}
-      "D3 Voronoi"]
-     [:a {:href "https://github.com/d3/d3-geo"}
-      "D3 Geo"]
-     [:a {:href "http://eric.clst.org/tech/usgeojson/"}
-      "GeoJSON and KML Data For The United States"]
-     [:a {:href "https://github.com/cestastanford/historical-us-city-populations"}
-      "United States Historical City Populations, 1790-2010"]]]])
+     ["A wonderful writeup by Philippe Rivi\u00e8re "
+      [:a {:href "https://visionscarto.net/the-state-of-d3-voronoi"}
+       "The state of d3 Voronoi"]]
+     ["The implementation of Voronoi diagrams you should likely use on web pages "
+      [:a {:href "https://github.com/d3/d3-voronoi"}
+       "d3 Voronoi"]]
+     ["A great library for dealing with GeoJSON "[:a {:href "https://github.com/d3/d3-geo"}
+       "d3 Geo"]]
+     ["GeoJSON for the US "[:a {:href "http://eric.clst.org/tech/usgeojson/"}
+       "GeoJSON and KML Data For The United States"]]
+     ["Historical census data driving the interactive map "
+      [:a {:href "https://github.com/cestastanford/historical-us-city-populations"}
+       "United States Historical City Populations, 1790-2010"]
+      ]]]])
+
 (defn references []
   [page references-body
    :prev {:text "Examples" :href "#/examples"}])
