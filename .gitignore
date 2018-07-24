@@ -1,9 +1,6 @@
 /target
 /classes
 /checkouts
-/docs/js/*
-!docs/js/app.js
-!docs/js/app.js.map
 profiles.clj
 pom.xml
 pom.xml.asc
@@ -18,4 +15,8 @@ pom.xml.asc
 /.sass-cache
 /.idea
 node_modules
+.rebel_readline_history
+/js/*
+!js/app.js
+!js/app.js.map
 
