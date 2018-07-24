@@ -1,0 +1,92 @@
+.body-container {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  max-width: 1600px;
+  margin: 0;
+  padding-top: 3px;
+  -webkit-font-smoothing: antialiased;
+  font-size: 1.125em;
+  color: #333;
+  line-height: 1.5em;
+}
+
+.graphics {
+  width: 80%;
+  height: 100%;
+  touch-action: none;
+  margin-left: 20%;
+  display: inline-block;
+}
+
+.graphics div {
+  height: 100%;
+}
+
+.graphics div svg {
+  height: 100%;
+  width: 100%;
+}
+
+.events-panel {
+  width: 20%;
+  margin-left: 80%;
+  position: float-right;
+  height: 100%;
+  overflow: scroll;
+  display: float-right;
+  position: fixed;
+}
+
+div.misc div  {
+  display: inline-grid;
+}
+div.misc div div svg {
+  width: 500px;
+  display: inline-grid;
+}
+
+.finished polygon {
+  fill: lightpink;
+  stroke-width: .9;
+  opacity: .2;
+}
+
+.finished polygon:hover {
+  fill: lightblue;
+}
+
+.voronoi-widget {
+}
+
+.control-panel {
+  width: 20%;
+  margin-left: 0%;
+  display: inline-block;
+}
+
+.add-bar h4 {
+  margin: 0;
+}
+
+h1, h2, h3 {
+  color: #000;
+}
+h1 {
+  font-size: 2.5em
+}
+
+h2 {
+  font-size: 2em
+}
+
+h3 {
+  font-size: 1.5em
+}
+
+a {
+  text-decoration: none;
+  color: #09f;
+}
+
+a:hover {
+  text-decoration: underline;
+}
