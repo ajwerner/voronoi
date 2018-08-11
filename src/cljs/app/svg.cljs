@@ -78,6 +78,18 @@
     (if-let [h (get-in db [:polygon-handlers q])]
       h)))
 
+(defn pink-ish-color []
+  (let [[r g b] [(- 255 (rand-int 40))
+                 (+  182 (+ -30 (rand-int 80)))
+                 (+ 193 (+ -3 0 (rand-int 70)))]]
+    (str "rgb(" r"," g "," b ")")))
+
+(defn rand-color[]
+  (let [[r g b] [(rand-int 255)
+                 (rand-int 255)
+                 (rand-int 255)]]
+    (str "rgb(" r"," g "," b ")")))
+
 (rf/reg-sub
   ::voronoi-polygons
   (fn [[_ q] _]
@@ -88,10 +100,11 @@
              (vor/polygons)
              (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)))
              (map-indexed
-               (fn [i {points :cell site :site}]
-                 ^{:key i} [:polygon {:points        (polygon-points points)
-                                      :on-mouse-over #(if h (rf/dispatch [h site]))
-                                      :on-click      (fn [] nil)}]))
+              (fn [i {points :cell site :site}]
+                ^{:key i} [:polygon {:points        (polygon-points points)
+                                     :on-mouse-over #(if h (rf/dispatch [h site]))
+                                     :on-click      (fn [] nil)
+                                     :style {:fill (pink-ish-color)}}]))
              (into [:g.finished]))))
 
 (defn voronoi-polygons [q]

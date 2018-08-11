@@ -2,8 +2,7 @@
   (:require [re-com.core :as rc]
             [app.svg :as svg]
             [app.us-map.subs]
-            [re-frame.core :as rf]
-            [cljsjs.d3]))
+            [re-frame.core :as rf]))
 
 (defn map-svg []
   (fn []
@@ -22,7 +21,9 @@
               :preserve-aspect-ratio "xMidYMax meet"}
         [:defs
          [:clipPath {:id "ko"} us]]
-        [:g {:id "usa"} us]
+        ;; [:g {:id "usa"} us] ;; adds US states
+        [:g
+         [svg/voronoi-points [:us-map/map-vor]]]
         [:g {:clip-path "url(#ko)"}
          [svg/voronoi-group-im [:us-map/map-vor]]]]])))
 
@@ -37,7 +38,8 @@
        [rc/title
         :style {:text-align :center}
         :level :level3
-        :label (str "Top " n " cities by population in the continental US in " (name y))]])))
+        :label (str "Top " n " cities by population in the continental US in "
+                    (name y))]])))
 
 (defn slider [model min max step on-change]
   [rc/h-box
@@ -45,19 +47,22 @@
    :children
    [[rc/box :size "38px" :child (str model)]
     [rc/box :size "1"
-     :child [rc/slider :width "350px" :model model :min min :max max :step step :on-change on-change
+     :child [rc/slider :width "350px" :model model :min min :max max :step step
+             :on-change on-change
              :style {:height "30px"} :class "slides"]]]])
 
 (defn year-slider []
   (fn []
     (let [y @(rf/subscribe [:us-map/year])]
-      [slider (int (name y)) 1790 2010 10 #(rf/dispatch [:us-map/set-year (keyword (str %))])])))
+      [slider (int (name y)) 1790 2010 10
+       #(rf/dispatch [:us-map/set-year (keyword (str %))])])))
 
 (defn top-n-slider []
   (fn []
     (let [n @(rf/subscribe [:us-map/real-n])
           max-n @(rf/subscribe [:us-map/max-n])]
-      [slider n 3 max-n 1 #(rf/dispatch [:us-map/set-top-n %])])))
+      [slider n 3 max-n 1
+       #(rf/dispatch [:us-map/set-top-n %])])))
 
 (defn cur-city-info []
   (fn []

@@ -7,6 +7,8 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.312"
                   :scope "provided"]
+                 [com.cognitect/transit-cljs "0.8.256"]
+                 [com.cognitect/transit-java "0.8.332"]
                  [re-com "2.1.0"]
                  [org.clojure/data.avl "0.0.17"]
                  [testdouble/clojurescript.csv "0.3.0"]
@@ -20,6 +22,7 @@
                   :exclusions [org.clojure/tools.reader]]
                  [compojure "1.6.1"]
                  [hiccup "1.0.5"]
+                 [org.clojure/core.async "0.4.474"]
                  [yogthos/config "1.1.1"]
                  [cljsjs/topojson "1.6.18-0"]
                  [cljsjs/d3geo "0.2.15-2"]
@@ -36,12 +39,12 @@
             [lein-asset-minifier "0.2.7"
              :exclusions [org.clojure/clojure]]]
 
-  :ring {:handler voronoi.handler/app
+  :ring {:handler app.handler/app
          :uberwar-name "app.war"}
 
   :min-lein-version "2.5.0"
   :uberjar-name "app.jar"
-  :main voronoi.server
+  :main app.server
   :clean-targets ^{:protect false}
   [:target-path
    [:cljsbuild :builds :app :compiler :output-dir]
@@ -86,19 +89,18 @@
               :pseudo-names true
               :verbose true
               :closure-warnings
-              {:check-types :warning ;; << ADD THIS
+              {:check-types :warning
                :check-variables :warning
                :undefined-names :off
                :externs-validation :off
                :missing-properties :off}
-
               :npm-deps {:topojson "3.0.2"}
               :install-deps true}}
             :app
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :figwheel {:on-jsload "app.core/mount-root"}
              :compiler
-             {:main "voronoi.dev"
+             {:main "app."
               :asset-path "/js/out"
               :output-to "target/cljsbuild/public/js/app.js"
               :output-dir "target/cljsbuild/public/js/out"
@@ -116,12 +118,12 @@
   {:http-server-root "public"
    :server-port 3449
    :nrepl-port 7002
-   :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
+   :nrepl-middleware ["cider.piggieback/wrap-cljs-repl"]
    :css-dirs ["resources/public/css"]
    :ring-handler app.handler/app
    :repl-eval-timeout 100000}
   :profiles {:dev {:repl-options {:init-ns voronoi.repl
-                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+                                  :nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
 
                    :dependencies [[binaryage/devtools "0.9.10"]
                                   [ring/ring-mock "0.3.2"]
@@ -131,7 +133,7 @@
                                   [org.clojure/core.async "0.4.474"]
                                   [figwheel-sidecar "0.5.16"]
                                   [org.clojure/tools.nrepl "0.2.13"]
-                                  [com.cemerick/piggieback "0.2.2"]
+                                  [cider/piggieback "0.3.8"]
                                   [pjstadig/humane-test-output "0.8.3"]
                                   [day8.re-frame/re-frame-10x "0.3.3-react16"]]
 

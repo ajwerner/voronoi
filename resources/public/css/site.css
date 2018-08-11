@@ -45,7 +45,7 @@ div.misc div div svg {
 }
 
 .finished polygon {
-  fill: lightpink;
+
   stroke-width: .9;
   opacity: .2;
 }

@@ -1,4 +1,4 @@
-(ns ^:figwheel-no-load voronoi.dev
+(ns ^:figwheel-no-load app.dev
   (:require
     [app.core :as core]
     [devtools.core :as devtools]))

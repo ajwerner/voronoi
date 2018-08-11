@@ -29,7 +29,6 @@
      mount-target
      (include-js "/js/app.js")]))
 
-
 (defroutes routes
   (GET "/" [] (loading-page))
   (GET "/about" [] (loading-page))
