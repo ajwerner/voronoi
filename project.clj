@@ -100,7 +100,7 @@
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :figwheel {:on-jsload "app.core/mount-root"}
              :compiler
-             {:main "app."
+             {:main "app.dev"
               :asset-path "/js/out"
               :output-to "target/cljsbuild/public/js/app.js"
               :output-dir "target/cljsbuild/public/js/out"

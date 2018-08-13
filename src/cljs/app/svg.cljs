@@ -60,10 +60,22 @@
 (defn polygon-points [points]
   (string/join " " (map #(str (:x %) "," (:y %)) points)))
 
-(rf/reg-fx
-  :register-polygon-handler
-  (fn [{:keys [id handler]}]
-    (rf/dispatch [:register-polygon-handler id handler])))
+;; (rf/reg-fx
+;;   :register-polygon-handler
+;;   (fn [{:keys [id handler]}]
+;;     (rf/dispatch [:register-polygon-handler id handler])))
+
+;; (rf/reg-fx
+;;  :register-site-color-func
+;;  (fn [{:keys [id func]}]
+;;       (rf/dispatch [:register-site-color-func id
+
+(rf/reg-event-db
+ :register-site-color-func
+ (fn [db [_ id color-func]]
+   (update db :site-color-funcs
+           (fn [color-funcs]
+             (assoc (if (nil? color-funcs) {} color-funcs) id color-func)))))
 
 (rf/reg-event-db
   :register-polygon-handler
@@ -78,24 +90,45 @@
     (if-let [h (get-in db [:polygon-handlers q])]
       h)))
 
+(defn rgb-str [r g b]
+  (str "rgb("r","g","b")"))
+
+
 (defn pink-ish-color []
   (let [[r g b] [(- 255 (rand-int 40))
                  (+  182 (+ -30 (rand-int 80)))
                  (+ 193 (+ -3 0 (rand-int 70)))]]
-    (str "rgb(" r"," g "," b ")")))
+    (rgb-str r g b)))
+
+  
+
+
+(rf/reg-sub
+ :site-color-func
+ (fn [db [_ q]]
+   (if-let [f (get-in db [:site-color-funcs q])]
+     f
+     #(fn [_] (pink-ish-color)))))
+
 
 (defn rand-color[]
   (let [[r g b] [(rand-int 255)
                  (rand-int 255)
                  (rand-int 255)]]
-    (str "rgb(" r"," g "," b ")")))
+    (str "rgb("r","g","b")")))
+
+;; (rf/reg-sub
+;;  :site-colors
+;;  (fn [_ [_ id]]
+;;    (rf/subscribe :))
 
 (rf/reg-sub
   ::voronoi-polygons
   (fn [[_ q] _]
     [(rf/subscribe q)
-     (rf/subscribe [:polygon-handler q])])
-  (fn [[vor h] [_ q]]
+     (rf/subscribe [:polygon-handler q])
+     (rf/subscribe [:site-color-func q])])
+  (fn [[vor h cf] [_ q]]
     (some->> vor
              (vor/polygons)
              (remove #(some (fn [{x :x}] (is-infinite? x)) (:cell %)))
@@ -104,7 +137,7 @@
                 ^{:key i} [:polygon {:points        (polygon-points points)
                                      :on-mouse-over #(if h (rf/dispatch [h site]))
                                      :on-click      (fn [] nil)
-                                     :style {:fill (pink-ish-color)}}]))
+                                     :style {:fill (cf site)}}]))
              (into [:g.finished]))))
 
 (defn voronoi-polygons [q]

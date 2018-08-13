@@ -3,6 +3,7 @@
             [day8.re-frame.http-fx]
             [goog.labs.format.csv :as csv]
             [ajax.core :as ajax]
+            [app.svg :as svg]
             [cljsjs.d3]))
 
 (rf/reg-event-fx
@@ -10,6 +11,7 @@
   (fn [co x]
     (println x)
     co))
+
 (rf/reg-event-fx
   ::initialize
   (fn [{db :db} _]
@@ -21,7 +23,17 @@
   (fn [_ _]
     (rf/dispatch [:us-map/fetch-city-data])
     (rf/dispatch [:us-map/fetch-map-data])
-    (rf/dispatch [:register-polygon-handler [:us-map/map-vor] :us-map/polygon-over])))
+    (rf/dispatch [:register-polygon-handler [:us-map/map-vor] :us-map/polygon-over])
+    (rf/dispatch [:register-site-color-func [:us-map/map-vor]
+                  (let [cur (rf/subscribe [:us-map/cur-city])
+                        colors (atom {})
+                        get-color (fn [site]
+                                    (swap! colors #(if (% site) % (assoc % site (svg/pink-ish-color))))
+                                    (get @colors site))]
+                    (fn [site]
+                      (if (= @cur site)
+                        (svg/rgb-str 0 255 0)
+                        (get-color site))))])))
 
 
 ;; ----------------------------------------------------------------
