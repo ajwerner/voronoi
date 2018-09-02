@@ -3,9 +3,6 @@
   (:require [reagent.core :as reagent :refer [atom]]
             [voronoi.core :as vor]
             [voronoi.points :as points]
-            [app.components.arc-table :refer [arc-table-and-toggle]]
-            [app.components.events-panel :refer [events-panel]]
-            [app.components.control-panel :refer [control-panel]]
             [app.examples.examples :as examples]
             [app.slides.events :as slides]
             [app.playground.events]
@@ -190,30 +187,30 @@
      ["My Java implementation from college which is faster but more broken. "
       [:a {:href "https://github.com/ajwerner/fortune"}  "https://github.com/ajwerner/fortune"]]]]])
 
-(defn references []
-  [page references-body
-   :prev {:text "Examples" :href "#/examples"}])
-
-(defn intro-page []
-  [page intro
-   :prev {:text "Contrived example" :href "#/map"}
-   :next {:text "About Voronoi Diagrams" :href "#/app-diagrams"}])
-
 (defn map-page []
   [page us-map/map-thing
-   :next {:text "Intro" :href "#/intro"}])
+   :next {:text "What am I looking at?" :href "#/app-diagrams"}])
 
 (defn voronoi-diagrams []
   [page  about-diagrams
-   :prev {:text "Intro" :href "#/intro"}
+   :prev {:text "Contrived example" :href "#/map"}
+   :next {:text "Examples" :href "#/examples"}])
+
+(defn intro-page []
+  [page intro
+   :prev {:text "About Voronoi Diagrams" :href "#/app-diagrams"}
    :next {:text "Examples" :href "#/examples"}])
 
 (defn examples-page []
   [page examples/examples-page
-   :prev {:text "About Voronoi Diagrams" :href "#/app-diagrams"}
+   :prev {:text "Intro" :href "#/intro"}
    :next {:text "Animations" :href "#/animation-playground"}])
 
 (defn animation-playground []
   [page (playground/new-app-thing [:playground/builder])
    :prev {:text "Examples" :href "#/examples"}
    :next {:text "References" :href "#/references"}])
+
+(defn references []
+  [page references-body
+   :prev {:text "Examples" :href "#/examples"}])

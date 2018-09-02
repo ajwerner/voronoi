@@ -114,13 +114,6 @@
   (fn [db [_ site]]
     (assoc db :us-map/cur-city site)))
 
-(rf/reg-event-fx
-  :us-map/set-top-nx
-  (fn [{db :db} [_ n]]
-    (let [db (assoc db :us-map/top-n n)
-          year (:us-map/year db)
-          vor (get-in db [:us-map/vor year n])]
-      (cond-> {:db db}))))
 
 (rf/reg-event-db
   :us-map/set-top-n
