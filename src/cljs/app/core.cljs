@@ -1,6 +1,7 @@
 (ns app.core
   (:require [clojure.string :as str]
             [reagent.core :as reagent :refer [atom]]
+            [reagent.dom.client :as rdomc]
             [re-frame.core :as rf]
             [secretary.core :as secretary :include-macros true]
             [accountant.core :as accountant]
@@ -45,6 +46,8 @@
 (defonce map-page #(components/map-page))
 
 (defonce animation-playground-page #(components/animation-playground))
+
+(defonce root (rdomc/create-root (.getElementById js/document "app")))
 
 ;; -------------------------
 ;; Event handlers
@@ -92,7 +95,7 @@
 ;; Initialize app
 
 (defn mount-root []
-  (reagent/render [ui] (.getElementById js/document "app")))
+  (rdomc/render root (reagent/as-element [ui])))
 
 (defn init! []
   (accountant/configure-navigation!
@@ -113,3 +116,5 @@
   (mount-root))
 
 (defn ^:export main [] (init!))
+
+(init!)

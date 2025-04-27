@@ -20,7 +20,7 @@
 (rf/reg-event-db
   :playground/touch-cancel
   (fn [db _]
-    (update-in db [:playground/scroll :prev] #(do nil))))
+    (update db :playground/scroll #(assoc % :prev nil))))
 
 (rf/reg-cofx
   :now

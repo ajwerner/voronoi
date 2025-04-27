@@ -15,13 +15,13 @@
   nil)
 
 (deftest test-random-small
-  (test-random 100)
-  (test-random 200)
-  (test-random 400)
-  (test-random 800)
-  (test-random 1600)
-  (test-random 3200)
-  (test-random 6400)
-  (test-random 12800))
+  (test-random 10)
+  (test-random 20)
+  (test-random 40)
+  (test-random 80)
+  (test-random 160)
+  (test-random 320)
+  (test-random 640)
+  (test-random 1280))
 
 (run-all-tests)

@@ -1,18 +1,17 @@
 (ns app.components
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [reagent.core :as reagent :refer [atom]]
-            [voronoi.core :as vor]
-            [voronoi.points :as points]
-            [app.examples.examples :as examples]
-            [app.slides.events :as slides]
-            [app.playground.events]
-            [app.playground.subs]
-            [app.slides.events]
-            [app.slides.subs]
-            [app.us-map.views :as us-map]
-            [app.playground.views :as playground]
-            [re-com.core :as rc]
-            [re-com.util :as rc-util]))
+  (:require
+   [voronoi.core :as vor]
+   [voronoi.points :as points]
+   [app.examples.examples :as examples]
+   [app.slides.events :as slides]
+   [app.playground.events]
+   [app.playground.subs]
+   [app.slides.events]
+   [app.slides.subs]
+   [app.us-map.views :as us-map]
+   [app.playground.views :as playground]
+   [re-com.core :as rc]
+   [re-com.util :as rc-util]))
 
 (defn bulleted-list [& li-text-items]
   [:ul (map #(into ^{:key %} [:li] %) li-text-items)])
@@ -120,16 +119,14 @@
       make it a little interesting. We'll explore those a little bit on later pages."]
      [bulleted-list
       "Careful handling of co-circular and co-linear points"
-      "Exposed algorithm state for pedagogical and artistic properties."
-      ]
+      "Exposed algorithm state for pedagogical and artistic properties."]
      [rc/title :level :level3 :label "What else?"]
      [p
       "There's a bunch of stuff still to do"]
      [bulleted-list
       "Better handling of very near points"
       "Some clipping things for edge cases where the top and bottom
-      edges or right and stuff"
-      ]]]])
+      edges or right and stuff"]]]])
 
 (defn about-diagrams []
   [rc/v-box
@@ -160,8 +157,7 @@
      :child
      [playground/new-app-thing [:slides/builder]]]
     [p
-     "If you remember back to high school math, a parabola is defined as the set of points equidistant from a point (focus) and a line (directrix). In this example, the sites are the foci and the sweep-line is the directrix. This ends up having nice properties in that the points on the Voronoi edges are traced out by the evolution of the parabolas as the sweep-line progresses across the plane."]
-    ]])
+     "If you remember back to high school math, a parabola is defined as the set of points equidistant from a point (focus) and a line (directrix). In this example, the sites are the foci and the sweep-line is the directrix. This ends up having nice properties in that the points on the Voronoi edges are traced out by the evolution of the parabolas as the sweep-line progresses across the plane."]]])
 
 (defn references-body []
   [rc/v-box
@@ -176,8 +172,8 @@
        "The state of d3 Voronoi"]]
      ["A great library for dealing with GeoJSON. "
       [:a {:href "https://github.com/d3/d3-geo"} "d3 Geo"]]
-     ["GeoJSON for the US "[:a {:href "http://eric.clst.org/tech/usgeojson/"}
-       "GeoJSON and KML Data For The United States"]]
+     ["GeoJSON for the US " [:a {:href "http://eric.clst.org/tech/usgeojson/"}
+                             "GeoJSON and KML Data For The United States"]]
      ["Historical census data driving the interactive map. "
       [:a {:href "https://github.com/cestastanford/historical-us-city-populations"}
        "United States Historical City Populations, 1790-2010"]]
@@ -187,30 +183,56 @@
      ["My Java implementation from college which is faster but more broken. "
       [:a {:href "https://github.com/ajwerner/fortune"}  "https://github.com/ajwerner/fortune"]]]]])
 
-(defn map-page []
-  [page us-map/map-thing
-   :next {:text "What am I looking at?" :href "#/app-diagrams"}])
+(def pages [{:name "map-page"
+             :title "Map"
+             :route "#/map"
+             :component us-map/map-thing}
+            {:name "app-diagrams"
+             :title "About Voronoi Diagrams"
+             :route "#/app-diagrams"
+             :component about-diagrams}
+            {:name "intro-page"
+             :title "What am I looking at?"
+             :route "#/intro"
+             :component intro}
+            {:name "examples"
+             :title "Examples"
+             :route "#/examples"
+             :component examples/examples-page}
+            {:name "animation-playground"
+             :title "Animation Playground"
+             :route "#/animation-playground"
+             :component #(playground/new-app-thing [:playground/builder])}
+            {:name "references"
+             :title "References"
+             :route "#/references"
+             :component references-body}])
 
-(defn voronoi-diagrams []
-  [page  about-diagrams
-   :prev {:text "Contrived example" :href "#/map"}
-   :next {:text "Examples" :href "#/examples"}])
+(defn find-page-idx-by-name
+  "Find the index of a page by name"
+  [page-name]
+  (first (keep-indexed (fn [idx {:keys [name]}]
+                         (when (= name page-name) idx))
+                       pages)))
 
-(defn intro-page []
-  [page intro
-   :prev {:text "About Voronoi Diagrams" :href "#/app-diagrams"}
-   :next {:text "Examples" :href "#/examples"}])
+(defn make-page [name]
+  (let [page-idx (find-page-idx-by-name name)
+        _ (when (nil? page-idx)
+            (throw (js/Error. (str "Page not found: " name))))
+        {:keys [component]} (nth pages page-idx)
+        prev (dec page-idx)
+        prev (when (>= prev 0) (nth pages prev))
+        next (inc page-idx)
+        next (when (< next (count pages)) (nth pages next))]
+    [page
+     component
+     (merge
+      (when prev {:prev {:text (:title prev) :href (:route prev)}})
+      (when next {:next {:text (:title next) :href (:route next)}}))]))
 
-(defn examples-page []
-  [page examples/examples-page
-   :prev {:text "Intro" :href "#/intro"}
-   :next {:text "Animations" :href "#/animation-playground"}])
-
-(defn animation-playground []
-  [page (playground/new-app-thing [:playground/builder])
-   :prev {:text "Examples" :href "#/examples"}
-   :next {:text "References" :href "#/references"}])
-
-(defn references []
-  [page references-body
-   :prev {:text "Examples" :href "#/examples"}])
+(defn map-page [] (make-page "map-page"))
+(defn voronoi-diagrams [] (make-page "app-diagrams"))
+(defn intro-page [] (make-page "intro-page"))
+(defn examples-page [] (make-page "examples"))
+(defn animation-playground [] (make-page "animation-playground"))
+(defn references [] (make-page "references"))

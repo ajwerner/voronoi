@@ -14,7 +14,7 @@
 
 (defn ^double to-fixed [^double n digits]
   #?(:clj (doto (new java.math.BigDecimal n)
-            (.setScale digits java.math.RoundingMode/HALF_EVEN)
+            (.setScale digits)
             (.doubleValue))
      :cljs (let [pow (.pow js/Math 10 digits)]
              (/ (.round js/Math (* n pow)) pow))))
