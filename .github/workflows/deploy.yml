@@ -46,8 +46,10 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
+          set -eux -o pipefail
           mkdir -p deploy
-          cp target/cljsbuild/public/js/app.js deploy/
+          mkdir deploy/js
+          cp target/cljsbuild/public/js/app.js deploy/js/
           cp -r resources/public/css deploy/
           cp -r resources/public/assets deploy/
           cp resources/public/index_prod.html deploy/index.html
