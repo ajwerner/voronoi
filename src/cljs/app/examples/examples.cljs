@@ -141,7 +141,7 @@
 
    :style {:overflow "auto"}
    :child
-   [rc/vertical-bar-tabs
+   [rc/vertical-pill-tabs
     :tabs (rf/subscribe [::tabs])
     :model (rf/subscribe [::cur-tab])
     :on-change #(rf/dispatch [::set-cur-tab %])]])
